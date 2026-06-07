@@ -790,7 +790,7 @@ tbody td {
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">CHAMPIONS AI</div>
-    <div class="login-sub">Matchmaker Tool</div>
+    <div class="login-sub">Combat Matchmaker Tool</div>
     <button class="login-btn" onclick="enterApp()">ENTER</button>
   </div>
 </div>
@@ -1709,9 +1709,6 @@ function renderNotes(mc) {
 function renderCamo(mc) {
   mc.innerHTML = `
     <div class="section-title">CAMO ELIGIBILITY STATUS</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">
-      MMA regulatory body · Update fighter CAMO status after checking the CAMO portal. Flagged fighters cannot be matched.
-    </div>
     <div class="camo-grid">
       ${data.camo.map(f => {
         const isFlag = f.status && f.status.includes('⚑');
@@ -1735,7 +1732,6 @@ function renderIska(mc) {
   mc.innerHTML = `
     <div style="margin-bottom:20px;">
       <div class="section-title" style="margin-bottom:4px;">🌎 ISKA STATUS</div>
-      <div style="font-size:12px;color:var(--muted)">Muay Thai regulatory body · ${data.iska.length} fighters · <span style="color:var(--red)">${flags.length} flagged</span></div>
     </div>
     <div class="camo-grid">
       ${data.iska.map(f => {
