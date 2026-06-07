@@ -718,11 +718,35 @@ tbody td {
 .toast.show { transform: translateX(-50%) translateY(0); }
 .toast.error { border-color: var(--red); }
 
+/* ── FIELD LINKS (tap to call / tap to IG) ── */
+.field-link {
+  color: var(--gold) !important;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+}
+.field-link:active { opacity: 0.7; }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 600px) {
   .topbar-nav { display: none; }
   #profile-panel { width: 100%; }
   .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+  /* Bigger tap targets */
+  .filter-btn { min-height: 38px; padding: 8px 14px; font-size: 12px; }
+  .roster-table td { padding: 13px 8px; }
+  .bout-card { padding: 14px; }
+  /* Search bar — prevent iOS zoom */
+  .search-input { height: 44px; font-size: 16px !important; }
+  input, textarea, select { font-size: 16px !important; }
+  #note-textarea { min-height: 80px; }
+  /* Dashboard */
+  .stat-card { padding: 14px 10px; }
+  .stat-num { font-size: 28px; }
+  /* Login */
+  .login-logo { font-size: 32px; }
 }
 
 .tab-bar {
@@ -783,13 +807,13 @@ tbody td {
     </div>
     <div class="topbar-nav">
       <button class="nav-btn active" onclick="showView('dashboard')">Dashboard</button>
+      <button class="nav-btn" onclick="showView('cards')">Cards</button>
       <button class="nav-btn" onclick="showView('mma')">MMA</button>
       <button class="nav-btn" onclick="showView('mt')">Muay Thai</button>
       <button class="nav-btn" onclick="showView('grapple')">Grappling</button>
       <button class="nav-btn" onclick="showView('gyms')">Gyms</button>
-      <button class="nav-btn" onclick="showView('cards')">Cards</button>
-      <button class="nav-btn" onclick="showView('notes')">Notes</button>
       <button class="nav-btn" onclick="showView('camo')">CAMO</button>
+      <button class="nav-btn" onclick="showView('iska')">ISKA</button>
     </div>
   </div>
 
@@ -801,12 +825,13 @@ tbody td {
   <!-- MOBILE TAB BAR -->
   <div class="tab-bar">
     <button class="tab-btn active" onclick="showView('dashboard')"><span class="tab-icon">🏠</span>Home</button>
+    <button class="tab-btn" onclick="showView('cards')"><span class="tab-icon">📋</span>Cards</button>
     <button class="tab-btn" onclick="showView('mma')"><span class="tab-icon">🥊</span>MMA</button>
     <button class="tab-btn" onclick="showView('mt')"><span class="tab-icon">🦵</span>MT</button>
     <button class="tab-btn" onclick="showView('grapple')"><span class="tab-icon">🥋</span>Grapple</button>
-    <button class="tab-btn" onclick="showView('gyms')"><span class="tab-icon">🏛️</span>Gyms</button>
-    <button class="tab-btn" onclick="showView('cards')"><span class="tab-icon">📋</span>Cards</button>
-    <button class="tab-btn" onclick="showView('camo')"><span class="tab-icon">⚑</span>CAMO</button>
+    <button class="tab-btn" onclick="showView('gyms')"><span class="tab-icon">⚔️</span>Gyms</button>
+    <button class="tab-btn" onclick="showView('camo')"><span class="tab-icon" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;"><svg viewBox="0 0 470.833 470.832" width="22" height="22" xmlns="http://www.w3.org/2000/svg"><circle fill="#3C5EAA" cx="235.417" cy="235.417" r="235.417"/><circle fill="#FFFFFF" cx="235.417" cy="235.417" r="224.122"/><circle fill="#3C5EAA" cx="235.417" cy="235.417" r="193.003"/><text x="235" y="265" text-anchor="middle" font-family="Arial Black,sans-serif" font-weight="900" font-size="110" fill="#FFFFFF" letter-spacing="2">CAMO</text><polygon fill="#FFFFFF" points="131,218 135,231 148,231 138,238 142,251 131,243 121,251 125,238 115,231 127,231"/><polygon fill="#FFFFFF" points="222,218 226,231 239,231 228,238 232,251 222,243 212,251 216,238 205,231 218,231"/><polygon fill="#FFFFFF" points="334,218 338,231 351,231 340,238 344,251 334,243 324,251 328,238 317,231 330,231"/></svg></span>CAMO</button>
+    <button class="tab-btn" onclick="showView('iska')"><span class="tab-icon">🌎</span>ISKA</button>
   </div>
 </div>
 
@@ -909,11 +934,12 @@ const TABS = {
   nm6card: 'NM6 Fight Card',
   notes:   'Notes Log',
   gyms:    'Gyms',
-  camo:    'CAMO Status'
+  camo:    'CAMO Status',
+  iska:    'ISKA Status'
 };
 
 // ── STATE ────────────────────────────────────────────────────────
-let data = { mma:[], mt:[], grapple:[], nm5card:[], nm6card:[], notes:[], gyms:[], camo:[] };
+let data = { mma:[], mt:[], grapple:[], nm5card:[], nm6card:[], notes:[], gyms:[], camo:[], iska:[] };
 let currentView = 'dashboard';
 let currentFighter = null;
 let recognition = null;
@@ -945,18 +971,22 @@ async function fetchSheet(tabName) {
 
 function parseRoster(rows) {
   if (!rows.length) return [];
-  const headers = rows[1] || rows[0];
   return rows.slice(2).filter(r => r && r[1] && r[1].trim()).map(r => ({
-    weight:  r[0] || '',
-    name:    r[1] || '',
-    gender:  r[2] || '',
-    age:     r[3] || '',
-    record:  r[4] || '',
-    height:  r[5] || '',
-    gym:     r[6] || '',
-    contact: r[7] || '',
-    notes:   r[8] || '',
-    flag:    r[9] || ''
+    weight:   r[0]  || '',
+    name:     r[1]  || '',
+    gender:   r[2]  || '',
+    age:      r[3]  || '',
+    record:   r[4]  || '',
+    height:   r[5]  || '',
+    gym:      r[6]  || '',
+    contact:  r[7]  || '',
+    notes:    r[8]  || '',
+    flag:     r[9]  || '',
+    instagram:r[10] || '',
+    gymIg:    r[11] || '',
+    phone:    r[12] || '',
+    dob:      r[13] || '',
+    email:    r[14] || ''
   }));
 }
 
@@ -1032,7 +1062,7 @@ function parseCamo(rows) {
 
 async function loadAllData() {
   showLoading();
-  const [mmaR, mtR, grR, nm5R, nm6R, notesR, gymsR, camoR] = await Promise.all([
+  const [mmaR, mtR, grR, nm5R, nm6R, notesR, gymsR, camoR, iskaR] = await Promise.all([
     fetchSheet(TABS.mma),
     fetchSheet(TABS.mt),
     fetchSheet(TABS.grapple),
@@ -1040,7 +1070,8 @@ async function loadAllData() {
     fetchSheet(TABS.nm6card),
     fetchSheet(TABS.notes),
     fetchSheet(TABS.gyms),
-    fetchSheet(TABS.camo)
+    fetchSheet(TABS.camo),
+    fetchSheet(TABS.iska)
   ]);
 
   data.mma     = parseRoster(mmaR);
@@ -1049,8 +1080,9 @@ async function loadAllData() {
   data.nm5card = parseBoutCard(nm5R);
   data.nm6card = parseBoutCard(nm6R);
   data.notes   = parseNotes(notesR);
-  data.gyms    = gymsR.slice(2).filter(r=>r&&r[0]).map(r=>({name:r[0],contact:r[1]||'',sports:r[2]||'',notes:r[3]||''}));
+  data.gyms    = gymsR.slice(2).filter(r=>r&&r[0]).map(r=>({name:r[0],contact:r[1]||'',sports:r[2]||'',notes:r[3]||'',phone:r[4]||'',instagram:r[5]||''}));
   data.camo    = parseCamo(camoR);
+  data.iska    = parseCamo(iskaR); // same structure: name, sport, gym, licenseId, status, checked, notes
 
   // Merge local notes
   data.notes = [...localNotes, ...data.notes];
@@ -1103,12 +1135,12 @@ function showView(view) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 
-  const viewMap = {dashboard:0, mma:1, mt:2, grapple:3, gyms:4, cards:5, notes:6, camo:7};
+  const viewMap = {dashboard:0, cards:1, mma:2, mt:3, grapple:4, gyms:5, camo:6, iska:7};
   const navBtns = document.querySelectorAll('.nav-btn');
   const tabBtns = document.querySelectorAll('.tab-btn');
   if (navBtns[viewMap[view]]) navBtns[viewMap[view]].classList.add('active');
 
-  const tabMap = {dashboard:0, mma:1, mt:2, grapple:3, gyms:4, cards:5, camo:6};
+  const tabMap = {dashboard:0, cards:1, mma:2, mt:3, grapple:4, gyms:5, camo:6, iska:7};
   if (tabBtns[tabMap[view]]) tabBtns[tabMap[view]].classList.add('active');
 
   const mc = document.getElementById('main-content');
@@ -1121,38 +1153,58 @@ function showView(view) {
   else if (view === 'cards') renderCardBuilder(mc);
   else if (view === 'notes') renderNotes(mc);
   else if (view === 'camo') renderCamo(mc);
+  else if (view === 'iska') renderIska(mc);
 }
 
 // ── DASHBOARD ────────────────────────────────────────────────────
 function renderDashboard(mc) {
-  const allFlags = [...data.mma, ...data.mt].filter(f => f.flag);
   const camoFlags = data.camo.filter(c => c.status && c.status.includes('⚑'));
   const totalFighters = data.mma.length + data.mt.length + data.grapple.length;
-  const totalBouts = data.nm5card.length + data.nm6card.length;
 
-  let flagsHtml = '';
-  camoFlags.forEach(f => {
-    flagsHtml += `<div class="flag-card" onclick="searchAndOpen('${escHtml(f.name)}')">
-      <span class="flag-icon">⚑</span>
-      <div class="flag-text">
-        <div class="flag-name">${escHtml(f.name)}</div>
-        <div class="flag-detail">${escHtml(f.status)}</div>
-      </div>
-      <span class="flag-sport">${escHtml(f.sport)}</span>
-    </div>`;
+  // Next full card — always cardEvents[0] (NMFC6 seeded, future events added after)
+  const nm6bouts = cardEvents[0] ? cardEvents[0].bouts : [];
+  const nextEventMeta = cardEvents[0] || {};
+
+  // Build set of fighter names on next card
+  const nextEventFighterNames = new Set();
+  nm6bouts.forEach(b => {
+    if (b.fighter1) nextEventFighterNames.add(b.fighter1.toLowerCase().trim());
+    if (b.fighter2) nextEventFighterNames.add(b.fighter2.toLowerCase().trim());
   });
 
-  allFlags.slice(0,5).forEach(f => {
-    if (!camoFlags.find(c=>c.name===f.name)) {
-      flagsHtml += `<div class="flag-card" onclick="openFighterProfile(${JSON.stringify(f).replace(/"/g,'&quot;')}, 'mma')">
+  // Flags: only fighters on NMFC6
+  let flagsHtml = '';
+  const eventCamoFlags = camoFlags.filter(f => nextEventFighterNames.has(f.name.toLowerCase().trim()));
+  const allRosterFlags = [...data.mma, ...data.mt].filter(f => f.flag && nextEventFighterNames.has(f.name.toLowerCase().trim()));
+
+  if (nextEventFighterNames.size === 0) {
+    flagsHtml = '<div class="empty" style="font-size:13px;color:var(--muted)">No fighters booked yet</div>';
+  } else {
+    eventCamoFlags.forEach(f => {
+      flagsHtml += `<div class="flag-card" onclick="searchAndOpen('${escHtml(f.name)}')">
         <span class="flag-icon">⚑</span>
         <div class="flag-text">
           <div class="flag-name">${escHtml(f.name)}</div>
-          <div class="flag-detail">${escHtml(f.flag)}</div>
+          <div class="flag-detail">${escHtml(f.status)}</div>
         </div>
+        <span class="flag-sport">${escHtml(f.sport)}</span>
       </div>`;
+    });
+    allRosterFlags.forEach(f => {
+      if (!eventCamoFlags.find(c => c.name.toLowerCase() === f.name.toLowerCase())) {
+        flagsHtml += `<div class="flag-card" onclick="openFighterProfile(${JSON.stringify(f).replace(/"/g,'&quot;')}, 'mma')">
+          <span class="flag-icon">⚑</span>
+          <div class="flag-text">
+            <div class="flag-name">${escHtml(f.name)}</div>
+            <div class="flag-detail">${escHtml(f.flag)}</div>
+          </div>
+        </div>`;
+      }
+    });
+    if (!flagsHtml) {
+      flagsHtml = `<div class="empty">All fighters on ${escHtml(nextEventMeta.name||'NMFC6')} are clear ✓</div>`;
     }
-  });
+  }
 
   // Recent notes
   const recentNotes = [...data.notes].slice(0, 4);
@@ -1166,17 +1218,70 @@ function renderDashboard(mc) {
       <div class="log-note-text">${escHtml(n.note)}</div>
     </div>`).join('') : '<div class="empty">No notes yet</div>';
 
+  // Next full card — from Sheet nm6card
+  const confirmedCount = nm6bouts.filter(b => b.status && b.status.toLowerCase().includes('confirm')).length;
+  let nextCardHtml = '';
+  if (nm6bouts.length > 0) {
+    nextCardHtml = `
+      <div class="section-title" style="margin-top:0">📋 NEXT FULL CARD</div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:16px 20px;margin-bottom:28px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--white)">${escHtml(nextEventMeta.name||'NMFC6')}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${escHtml(nextEventMeta.date||'July 18, 2026')} · ${escHtml(nextEventMeta.venue||'DNA Lounge · San Francisco')}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--gold)">${nm6bouts.length} bouts</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${confirmedCount} confirmed</div>
+          </div>
+        </div>
+        ${nm6bouts.map((b, i) => {
+          const hasConflict = b.fighter1 && b.fighter2 && b.gym1 && b.gym2 && b.gym1 === b.gym2;
+          const isConfirmed = b.status && b.status.toLowerCase().includes('confirm');
+          return `<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);${i===nm6bouts.length-1?'border-bottom:none':''}">
+            <div>
+              <div style="font-size:13px;font-weight:500">${escHtml(b.fighter1||'TBD')}</div>
+              <div style="font-size:11px;color:var(--muted)">${escHtml(b.gym1||'')}</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--gold-dim)">VS</div>
+              ${isConfirmed ? `<div style="font-size:9px;color:#66bb77;letter-spacing:1px;font-family:'Bebas Neue',sans-serif">CONF</div>` : `<div style="font-size:9px;color:var(--amber);letter-spacing:1px;font-family:'Bebas Neue',sans-serif">PEND</div>`}
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:13px;font-weight:500">${escHtml(b.fighter2||'TBD')}</div>
+              <div style="font-size:11px;color:var(--muted)">${escHtml(b.gym2||'')}</div>
+            </div>
+            ${hasConflict ? `<div style="grid-column:1/-1;font-size:11px;color:var(--red);padding-top:4px">⚑ Same gym conflict</div>` : ''}
+          </div>`;
+        }).join('')}
+        <div style="margin-top:12px;text-align:right">
+          <button onclick="showView('cards')" style="background:none;border:1px solid var(--gold-dim);color:var(--gold);padding:6px 16px;border-radius:4px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;">OPEN CARD BUILDER →</button>
+        </div>
+      </div>`;
+  } else {
+    nextCardHtml = `
+      <div class="section-title" style="margin-top:0">📋 NEXT FULL CARD — NMFC6</div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:24px 20px;margin-bottom:28px;text-align:center;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--white);margin-bottom:4px">NMFC6</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">July 18 · DNA Lounge · San Francisco</div>
+        <div style="color:var(--muted);font-size:13px;margin-bottom:12px">No bouts loaded from sheet yet</div>
+        <button onclick="showView('cards')" style="background:none;border:1px solid var(--gold-dim);color:var(--gold);padding:6px 16px;border-radius:4px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;">VIEW CARD BUILDER →</button>
+      </div>`;
+  }
+
   mc.innerHTML = `
     <div class="dashboard-grid">
       <div class="stat-card"><div class="stat-num">${data.mma.length}</div><div class="stat-label">MMA Fighters</div></div>
       <div class="stat-card"><div class="stat-num">${data.mt.length}</div><div class="stat-label">Muay Thai</div></div>
       <div class="stat-card"><div class="stat-num">${data.grapple.length}</div><div class="stat-label">Grappling</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--red)">${camoFlags.length}</div><div class="stat-label">CAMO Flags</div></div>
-      <div class="stat-card"><div class="stat-num">${data.gyms.length}</div><div class="stat-label">Gyms</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--red)">${eventCamoFlags.length + allRosterFlags.length}</div><div class="stat-label">Card Flags</div></div>
+      <div class="stat-card"><div class="stat-num">${nm6bouts.length}</div><div class="stat-label">${escHtml(nextEventMeta.name||'NMFC6')} Bouts</div></div>
     </div>
 
-    <div class="section-title">⚑ ELIGIBILITY FLAGS</div>
-    <div class="flags-grid" style="margin-bottom:28px">${flagsHtml || '<div class="empty">No flags — all clear</div>'}</div>
+    ${nextCardHtml}
+
+    <div class="section-title">⚑ ELIGIBILITY FLAGS — ${escHtml(nextEventMeta.name||'NMFC6')}</div>
+    <div class="flags-grid" style="margin-bottom:28px">${flagsHtml}</div>
 
     <div class="section-title">RECENT NOTES</div>
     <div class="notes-list">${recentHtml}</div>
@@ -1247,7 +1352,7 @@ function renderGyms(mc) {
   const gymMap = {};
   const addFighter = (f, sport) => {
     const key = f.gym || 'Unknown Gym';
-    if (!gymMap[key]) gymMap[key] = { fighters: [], contact: f.contact || '', sports: new Set() };
+    if (!gymMap[key]) gymMap[key] = { fighters: [], contact: f.contact || '', sports: new Set(), phone:'', instagram:'' };
     gymMap[key].fighters.push({...f, sport});
     gymMap[key].sports.add(sport.toUpperCase());
   };
@@ -1255,10 +1360,12 @@ function renderGyms(mc) {
   data.mt.forEach(f => addFighter(f, 'MT'));
   data.grapple.forEach(f => addFighter(f, 'GRP'));
 
-  // Merge with gyms tab data
+  // Merge with gyms tab data (phone, instagram, contact)
   data.gyms.forEach(g => {
-    if (!gymMap[g.name]) gymMap[g.name] = { fighters: [], contact: g.contact || '', sports: new Set() };
+    if (!gymMap[g.name]) gymMap[g.name] = { fighters: [], contact: g.contact || '', sports: new Set(), phone:'', instagram:'' };
     if (g.contact) gymMap[g.name].contact = g.contact;
+    if (g.phone) gymMap[g.name].phone = g.phone;
+    if (g.instagram) gymMap[g.name].instagram = g.instagram;
   });
 
   const sortedGyms = Object.entries(gymMap).sort((a,b) => b[1].fighters.length - a[1].fighters.length);
@@ -1277,13 +1384,19 @@ function renderGyms(mc) {
           return `<span class="result-sport-badge ${cls}">${s}</span>`;
         }).join('');
         const flagged = gymData.fighters.filter(f=>f.flag).length;
+        const phoneClean = gymData.phone ? gymData.phone.replace(/\D/g,'') : '';
+        const igHandle = gymData.instagram ? gymData.instagram.replace('@','') : '';
         return `<div class="bout-card" style="cursor:default">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;">
+            <div style="flex:1;min-width:0;">
               <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px">${escHtml(gymName)}</div>
-              <div style="font-size:12px;color:var(--muted);margin-top:2px">${escHtml(gymData.contact)}</div>
+              <div style="font-size:13px;color:var(--white);margin-top:2px">${escHtml(gymData.contact)}</div>
+              <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;">
+                ${gymData.phone ? `<a href="tel:${phoneClean}" style="font-size:13px;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:4px;min-height:36px;padding:0 2px;">📞 ${escHtml(gymData.phone)}</a>` : ''}
+                ${gymData.instagram ? `<a href="https://instagram.com/${igHandle}" target="_blank" style="font-size:13px;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:4px;min-height:36px;padding:0 2px;">📷 ${escHtml(gymData.instagram)}</a>` : ''}
+              </div>
             </div>
-            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+            <div style="display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end;margin-left:8px">
               ${sportTags}
               <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${gymData.fighters.length} fighters</span>
               ${flagged ? `<span style="font-size:11px;color:var(--red)">⚑ ${flagged}</span>` : ''}
@@ -1292,7 +1405,7 @@ function renderGyms(mc) {
           <div style="display:flex;flex-wrap:wrap;gap:6px;">
             ${gymData.fighters.map(f => {
               const bc = f.sport==='MMA'?'badge-mma':f.sport==='MT'?'badge-mt':'badge-grapple';
-              return `<div onclick="openFighterProfile(${safeJson(f)}, '${f.sport.toLowerCase()}')" style="background:var(--border);border-radius:4px;padding:5px 10px;cursor:pointer;transition:background 0.15s;font-size:12px;display:flex;align-items:center;gap:6px;" onmouseover="this.style.background='#333'" onmouseout="this.style.background='var(--border)'">
+              return `<div onclick="openFighterProfile(${safeJson(f)}, '${f.sport.toLowerCase()}')" style="background:var(--border);border-radius:4px;padding:8px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;min-height:40px;">
                 <span class="result-sport-badge ${bc}" style="font-size:9px;padding:1px 5px">${escHtml(f.sport)}</span>
                 <span>${escHtml(f.name)}</span>
                 <span style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px">${escHtml(f.weight)}lbs</span>
@@ -1306,7 +1419,45 @@ function renderGyms(mc) {
 }
 
 // ── CARD BUILDER ─────────────────────────────────────────────────
-let cardEvents = JSON.parse(localStorage.getItem('nmfc_events') || '[]');
+const NMFC6_SEED = {
+  id: 'nmfc6',
+  name: 'NMFC6',
+  date: 'July 18, 2026',
+  venue: 'DNA Lounge · San Francisco',
+  sport: 'MMA',
+  seed: true,
+  bouts: [
+    { match:'Match 1',  weight:'135-140', gym1:'HAC',          fighter1:'Jorge Lara',        record1:'2-1',   gym2:'AKA',            fighter2:'Arsir Vargas',      record2:'2-0-1', rounds:'3x2', status:'Confirmed',         boutNotes:'Fight June 13th' },
+    { match:'Match 2',  weight:'168-170', gym1:'Silverback',   fighter1:'Luis Ventura',       record1:'0-0',   gym2:'Outlaw JJ',      fighter2:'Carlos Ortiz',      record2:'0-0',   rounds:'',    status:'Confirmed',         boutNotes:'⚑ NEEDS CAMO' },
+    { match:'Match 3',  weight:'127-128', gym1:'Live Oak',     fighter1:'Fernando Plascencia',record1:'0-4',   gym2:'El Nino',        fighter2:'Toby Fuentes',      record2:'1-4',   rounds:'3x3', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 4',  weight:'137',     gym1:'CSA',          fighter1:'Luke Pham',          record1:'0-1',   gym2:'8 Limbs',        fighter2:'Ivan Ramirez',      record2:'0-0',   rounds:'',    status:'Confirmed',         boutNotes:'' },
+    { match:'Match 5',  weight:'183',     gym1:'Outlaw JJ',    fighter1:'Yancarlo Reyes',     record1:'1-4',   gym2:'Team Black',     fighter2:'Willy Mack',        record2:'2-1',   rounds:'3x3', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 6',  weight:'170',     gym1:'AKA',          fighter1:'Ricky Nguyen',       record1:'0-0',   gym2:'Rice Bros',      fighter2:'Anthony Medina',    record2:'0-0',   rounds:'3x2', status:'Confirmed',         boutNotes:'⚑ NEEDS CAMO' },
+    { match:'Match 7',  weight:'150',     gym1:'El Nino',      fighter1:'Alex Aroche',        record1:'0-0',   gym2:'Uhuru',          fighter2:'Daniel Holloway',   record2:'0-1',   rounds:'3x2', status:'Confirmed',         boutNotes:'⚑ NEEDS CAMO' },
+    { match:'Match 8',  weight:'205',     gym1:'El Nino',      fighter1:'Scooby Wright',      record1:'1-0',   gym2:'Rice Bros',      fighter2:'Eddy Herrera',      record2:'1-0',   rounds:'3x2', status:'Confirmed',         boutNotes:'⚑ SUSPENSION — needs lifting' },
+    { match:'Match 9',  weight:'155',     gym1:'Escolta',      fighter1:'Caroline Fetuu',     record1:'0-0',   gym2:'10th Planet SD', fighter2:'Mandelyn Liew',     record2:'0-0',   rounds:'3x2', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 10', weight:'225',     gym1:'',             fighter1:'Hood Ken',           record1:'0-0',   gym2:'',               fighter2:'Konfidence',        record2:'0-0',   rounds:'3x2', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 11', weight:'170',     gym1:'Furia',        fighter1:'Kleber Rodiques',    record1:'0-0',   gym2:'Elevated',       fighter2:'Daniel Stonefield', record2:'0-0',   rounds:'3x2', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 12', weight:'205',     gym1:'Antdawgs',     fighter1:'Andrew Bailey',      record1:'0-0',   gym2:'Halo',           fighter2:'Bobby Liles',       record2:'0-1',   rounds:'3x2', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 13', weight:'135',     gym1:'Elite MT',     fighter1:'Javier Martinez',    record1:'2-1',   gym2:'Antdawgs',       fighter2:'Juan Padilla',      record2:'3-1',   rounds:'',    status:'Confirmed',         boutNotes:'' },
+    { match:'Match 14', weight:'170',     gym1:'Island City',  fighter1:'Eddie Garcia',       record1:'2-1',   gym2:'HAC',            fighter2:'Izayah Spencer',    record2:'3-4',   rounds:'3x3', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 15', weight:'170',     gym1:'Silverback',   fighter1:'Luis Ventura',       record1:'0-0',   gym2:'Outlaw JJ',      fighter2:'Carlos Ortiz',      record2:'0-0',   rounds:'3x2', status:'Confirmed',         boutNotes:'⚑ Duplicate of Match 2 — verify' },
+    { match:'Match 16', weight:'175',     gym1:'Team Santos',  fighter1:'Kevin Yamashita',    record1:'',      gym2:'Ralph Gracie SF',fighter2:'PJ McGrane',        record2:'',      rounds:'1x5', status:'Confirmed',         boutNotes:'Combat JJ' },
+    { match:'Match 17', weight:'155',     gym1:'',             fighter1:'Ezra Clark',         record1:'',      gym2:'Garth Taylor JJ',fighter2:'Anthony Wong',      record2:'',      rounds:'',    status:'',                  boutNotes:'Combat BJJ' },
+    { match:'Match 18', weight:'135',     gym1:'BAFA',         fighter1:'Thomas Doan',        record1:'0-1',   gym2:'El Nino',        fighter2:'Zaniel Gomez',      record2:'0-0',   rounds:'3x2', status:'Pending',           boutNotes:'' },
+    { match:'Match 19', weight:'155',     gym1:'Legends Elite',fighter1:'Angel Gomez',        record1:'0-1',   gym2:'Smash',          fighter2:'Phu Le',            record2:'2-0',   rounds:'3x2', status:'Confirmed/Pending', boutNotes:'' },
+    { match:'Match 20', weight:'125',     gym1:'',             fighter1:'(Fighter 1 TBD)',    record1:'',      gym2:'Reign',          fighter2:'Diogo Mayoral',     record2:'0-0',   rounds:'',    status:'Confirmed',         boutNotes:'' },
+    { match:'Match 21', weight:'145',     gym1:'Darkhorse',    fighter1:'Raul Ortiz',         record1:'7-1',   gym2:'Ralph Gracie',   fighter2:'Gunnar Summerset',  record2:'5-1',   rounds:'3x2', status:'Pending',           boutNotes:'Promotional Belt' },
+    { match:'Match 22', weight:'160',     gym1:'HAC',          fighter1:'Zach Chernoff',      record1:'3-2',   gym2:'',               fighter2:'Heyaw Meteke',      record2:'4-0',   rounds:'',    status:'',                  boutNotes:'' },
+    { match:'Match 22b',weight:'145',     gym1:'Darkhorse',    fighter1:'Bryan Perez',        record1:'2-1',   gym2:'Team Black',     fighter2:'Joseph Graydon',    record2:'1-1',   rounds:'',    status:'Confirmed/Pending', boutNotes:'' },
+    { match:'Match 23', weight:'185',     gym1:'AKA',          fighter1:'Grady Cloyd',        record1:'3-0',   gym2:'',               fighter2:'(Opponent TBD)',    record2:'',      rounds:'3x2', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 24', weight:'135',     gym1:'Resurrection', fighter1:'James Maltby',       record1:'1-4',   gym2:'',               fighter2:'(Opponent TBD)',    record2:'',      rounds:'',    status:'Confirmed',         boutNotes:'' },
+  ]
+};
+
+// Merge seed with any locally saved events (seed always first)
+const _savedEvents = JSON.parse(localStorage.getItem('nmfc_events') || '[]').filter(e => e.id !== 'nmfc6');
+let cardEvents = [NMFC6_SEED, ..._savedEvents];
 
 function renderCardBuilder(mc) {
   mc.innerHTML = `
@@ -1328,7 +1479,7 @@ function renderCardBuilder(mc) {
           </div>
           <div style="display:flex;gap:8px;">
             <button class="filter-btn" onclick="openAddBoutModal(${ei})">+ Bout</button>
-            <button class="filter-btn" style="color:var(--red);border-color:rgba(204,51,51,0.3)" onclick="deleteEvent(${ei})">Delete</button>
+            ${!ev.seed ? `<button class="filter-btn" style="color:var(--red);border-color:rgba(204,51,51,0.3)" onclick="confirmDeleteEvent(${ei})">Delete</button>` : ''}
           </div>
         </div>
         <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">${ev.bouts.length} BOUTS</div>
@@ -1526,6 +1677,15 @@ function removeBout(eventIdx, boutIdx) {
   renderCardBuilder(document.getElementById('main-content'));
 }
 
+function confirmDeleteEvent(idx) {
+  const ev = cardEvents[idx];
+  // Show toast with confirm button instead of instant delete
+  const toast = document.getElementById('toast');
+  toast.innerHTML = `Delete <strong>${escHtml(ev.name)}</strong>? <button onclick="deleteEvent(${idx})" style="margin-left:10px;background:var(--red);color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px;">Yes, delete</button>`;
+  toast.className = 'toast error show';
+  setTimeout(() => { toast.className = 'toast'; toast.innerHTML = ''; }, 5000);
+}
+
 // ── NOTES ────────────────────────────────────────────────────────
 function renderNotes(mc) {
   const allNotes = [...data.notes];
@@ -1550,7 +1710,7 @@ function renderCamo(mc) {
   mc.innerHTML = `
     <div class="section-title">CAMO ELIGIBILITY STATUS</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:16px">
-      Update fighter CAMO status after checking the CAMO portal. Flagged fighters cannot be matched.
+      MMA regulatory body · Update fighter CAMO status after checking the CAMO portal. Flagged fighters cannot be matched.
     </div>
     <div class="camo-grid">
       ${data.camo.map(f => {
@@ -1565,6 +1725,32 @@ function renderCamo(mc) {
         </div>`;
       }).join('')}
       ${!data.camo.length ? '<div class="empty">No CAMO data loaded</div>' : ''}
+    </div>`;
+}
+
+// ── ISKA STATUS (MUAY THAI REGULATORY) ───────────────────────────
+function renderIska(mc) {
+  const flags = data.iska.filter(f => f.status && f.status.includes('⚑'));
+
+  mc.innerHTML = `
+    <div style="margin-bottom:20px;">
+      <div class="section-title" style="margin-bottom:4px;">🌎 ISKA STATUS</div>
+      <div style="font-size:12px;color:var(--muted)">Muay Thai regulatory body · ${data.iska.length} fighters · <span style="color:var(--red)">${flags.length} flagged</span></div>
+    </div>
+    <div class="camo-grid">
+      ${data.iska.map(f => {
+        const isFlag = f.status && f.status.includes('⚑');
+        return `<div class="camo-row ${isFlag?'flag':''}" onclick="searchAndOpen('${escHtml(f.name)}')" style="cursor:pointer">
+          <div style="flex:1">
+            <div class="camo-fighter-name">${escHtml(f.name)}</div>
+            <div class="camo-fighter-detail">MT · ${escHtml(f.gym)}${f.checked ? ` · Checked: ${escHtml(f.checked)}` : ''}</div>
+            ${f.camoId ? `<div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px">ISKA # ${escHtml(f.camoId)}</div>` : ''}
+            ${f.notes ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${escHtml(f.notes)}</div>` : ''}
+          </div>
+          <div class="camo-status-text ${isFlag ? 'camo-flag-text' : 'camo-clear-text'}">${escHtml(f.status || 'Unknown')}</div>
+        </div>`;
+      }).join('')}
+      ${!data.iska.length ? '<div class="empty">No ISKA data — make sure the ISKA Status tab exists in your Google Sheet</div>' : ''}
     </div>`;
 }
 
@@ -1600,7 +1786,12 @@ function openFighterProfile(fighter, sport) {
       ${fighter.gym ? `<div class="profile-field"><span class="field-label">Gym</span><span class="field-val">${escHtml(fighter.gym)}</span></div>` : ''}
       ${fighter.contact ? `<div class="profile-field"><span class="field-label">Coach</span><span class="field-val">${escHtml(fighter.contact)}</span></div>` : ''}
       ${fighter.height ? `<div class="profile-field"><span class="field-label">Height</span><span class="field-val">${escHtml(fighter.height)}</span></div>` : ''}
-      <div class="profile-field"><span class="field-label">CAMO Status</span><span class="field-val ${camoClass}">${escHtml(camoStatus)}</span></div>
+      ${fighter.dob ? `<div class="profile-field"><span class="field-label">DOB</span><span class="field-val">${escHtml(fighter.dob)}</span></div>` : ''}
+      ${fighter.phone ? `<div class="profile-field"><span class="field-label">Phone</span><a href="tel:${escHtml(fighter.phone.replace(/\D/g,''))}" class="field-val field-link">📞 ${escHtml(fighter.phone)}</a></div>` : ''}
+      ${fighter.instagram ? `<div class="profile-field"><span class="field-label">Instagram</span><a href="https://instagram.com/${escHtml(fighter.instagram.replace('@',''))}" target="_blank" class="field-val field-link">📷 ${escHtml(fighter.instagram)}</a></div>` : ''}
+      ${fighter.gymIg ? `<div class="profile-field"><span class="field-label">Gym IG</span><a href="https://instagram.com/${escHtml(fighter.gymIg.replace('@',''))}" target="_blank" class="field-val field-link">📷 ${escHtml(fighter.gymIg)}</a></div>` : ''}
+      ${fighter.email ? `<div class="profile-field"><span class="field-label">Email</span><a href="mailto:${escHtml(fighter.email)}" class="field-val field-link">✉️ ${escHtml(fighter.email)}</a></div>` : ''}
+      <div class="profile-field"><span class="field-label">CAMO</span><span class="field-val ${camoClass}">${escHtml(camoStatus)}</span></div>
       ${fighter.notes ? `<div class="profile-field"><span class="field-label">Notes</span><span class="field-val" style="font-size:12px;color:#aaa">${escHtml(fighter.notes)}</span></div>` : ''}
       ${fighter.flag ? `<div style="background:var(--red-bg);border:1px solid rgba(204,51,51,0.3);border-radius:4px;padding:10px 12px;margin-top:10px;font-size:12px;color:var(--red)">⚑ ${escHtml(fighter.flag)}</div>` : ''}
     </div>
