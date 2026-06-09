@@ -1352,18 +1352,22 @@ function renderDashboard(mc) {
         ${nm6bouts.map((b, i) => {
           const hasConflict = b.fighter1 && b.fighter2 && b.gym1 && b.gym2 && b.gym1 === b.gym2;
           const isConfirmed = b.status && b.status.toLowerCase().includes('confirm');
+          const f1s = (b.fighter1||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+          const f2s = (b.fighter2||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+          const g1s = (b.gym1||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+          const g2s = (b.gym2||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
           return `<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);${i===nm6bouts.length-1?'border-bottom:none':''}">
             <div>
-              <div style="font-size:13px;font-weight:500;cursor:pointer;color:var(--white)" onclick="searchAndOpen('${escHtml(b.fighter1||'').replace(/'/g,"\\'")}'')">${escHtml(b.fighter1||'TBD')}</div>
-              <div style="font-size:11px;color:var(--gold-dim);cursor:pointer" onclick="openCoachPanel('${escHtml(b.gym1||'').replace(/'/g,"\\'")}'')">${escHtml(b.gym1||'')}</div>
+              <div style="font-size:13px;font-weight:500;cursor:pointer;color:var(--white);text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(201,168,76,0.4)" onclick="searchAndOpen('${f1s}')">${escHtml(b.fighter1||'TBD')}</div>
+              <div style="font-size:11px;color:var(--gold-dim);cursor:pointer" onclick="openCoachPanel('${g1s}')">${escHtml(b.gym1||'')}</div>
             </div>
             <div style="text-align:center">
               <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--gold-dim)">VS</div>
               ${isConfirmed ? `<div style="font-size:9px;color:#66bb77;letter-spacing:1px;font-family:'Bebas Neue',sans-serif">CONF</div>` : `<div style="font-size:9px;color:var(--amber);letter-spacing:1px;font-family:'Bebas Neue',sans-serif">PEND</div>`}
             </div>
             <div style="text-align:right">
-              <div style="font-size:13px;font-weight:500;cursor:pointer;color:var(--white)" onclick="searchAndOpen('${escHtml(b.fighter2||'').replace(/'/g,"\\'")}'')">${escHtml(b.fighter2||'TBD')}</div>
-              <div style="font-size:11px;color:var(--gold-dim);cursor:pointer" onclick="openCoachPanel('${escHtml(b.gym2||'').replace(/'/g,"\\'")}'')">${escHtml(b.gym2||'')}</div>
+              <div style="font-size:13px;font-weight:500;cursor:pointer;color:var(--white);text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(201,168,76,0.4)" onclick="searchAndOpen('${f2s}')">${escHtml(b.fighter2||'TBD')}</div>
+              <div style="font-size:11px;color:var(--gold-dim);cursor:pointer;text-align:right" onclick="openCoachPanel('${g2s}')">${escHtml(b.gym2||'')}</div>
             </div>
             ${hasConflict ? `<div style="grid-column:1/-1;font-size:11px;color:var(--red);padding-top:4px">⚑ Same gym conflict</div>` : ''}
           </div>`;
@@ -1724,7 +1728,7 @@ function openCoachPanel(gymName) {
       <div class="profile-section-title">NOTES (${allNotes.length})</div>
       ${allNotes.length ? allNotes.map(n=>`
         <div class="note-item">
-          <div class="note-meta">${escHtml(n.date||'')}${n.fighter ? ` · <span style="color:var(--gold);cursor:pointer" onclick="searchAndOpen('${escHtml(n.fighter).replace(/'/g,"\\'")}'')">${escHtml(n.fighter)}</span>` : ''}</div>
+          <div class="note-meta">${escHtml(n.date||'')}${n.fighter ? ` · <span style="color:var(--gold);cursor:pointer" onclick="searchAndOpen('${(n.fighter||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">${escHtml(n.fighter)}</span>` : ''}</div>
           <div class="note-text">${escHtml(n.note)}</div>
         </div>`).join('') : '<div style="color:var(--muted);font-size:13px;padding:8px 0">No notes yet.</div>'}
     </div>`;
@@ -1746,7 +1750,7 @@ function saveCoachNote() {
   const date = `${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`;
   coachNotes[currentGym].unshift({ note: text, date });
   localStorage.setItem('champions_coach_notes', JSON.stringify(coachNotes));
-  openCoachPanel(currentGym, _currentGymData);
+  openCoachPanel(currentGym);
   showToast('Note saved ✓');
 }
 
@@ -2272,7 +2276,7 @@ function openFighterProfile(fighter, sport) {
       <div class="profile-section-title">NOTES HISTORY (${fighterNotes.length})</div>
       ${fighterNotes.length ? fighterNotes.map(n=>`
         <div class="note-item">
-          <div class="note-meta">${escHtml(n.by||'Team')} · ${escHtml(n.date)}</div>
+          <div class="note-meta">${escHtml(n.by||'Team')} · ${escHtml(n.date)}${n.gym ? ` · <span style="color:var(--gold);cursor:pointer" onclick="openCoachPanel('${(n.gym||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">${escHtml(n.gym)}</span>` : ''}</div>
           <div class="note-text">${escHtml(n.note)}</div>
         </div>`).join('') : '<div style="color:var(--muted);font-size:13px;padding:8px 0">No notes yet. Add one below.</div>'}
     </div>
@@ -2302,6 +2306,7 @@ function saveNote() {
     by:      'Team',
     fighter: currentFighter.name,
     sport:   currentFighter.sport.toUpperCase(),
+    gym:     currentFighter.gym || '',
     note:    text,
     followup:'No'
   };
