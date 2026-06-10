@@ -1,0 +1,2949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Champions AI — Fighter Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black: #0a0a0a;
+  --dark: #111111;
+  --card: #1a1a1a;
+  --border: #2a2a2a;
+  --gold: #C9A84C;
+  --gold-dim: #8a6f2e;
+  --gold-glow: rgba(201,168,76,0.15);
+  --white: #f0ede8;
+  --muted: #666;
+  --red: #cc3333;
+  --red-bg: rgba(204,51,51,0.1);
+  --green: #3a8a4a;
+  --green-bg: rgba(58,138,74,0.1);
+  --amber: #c47f00;
+  --amber-bg: rgba(196,127,0,0.1);
+  --blue: #3a6ea8;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── LOGIN ── */
+#login-screen {
+  position: fixed; inset: 0;
+  background: var(--black);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  flex-direction: column;
+  gap: 0;
+}
+
+.login-box {
+  width: 340px;
+  text-align: center;
+}
+
+.login-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 38px;
+  letter-spacing: 4px;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.login-sub {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 40px;
+}
+
+.login-box input {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px 16px;
+  color: var(--white);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  letter-spacing: 4px;
+  text-align: center;
+  outline: none;
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+
+.login-box input:focus { border-color: var(--gold); }
+
+.login-btn {
+  width: 100%;
+  background: var(--gold);
+  color: var(--black);
+  border: none;
+  border-radius: 4px;
+  padding: 14px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.login-btn:hover { opacity: 0.85; }
+.login-error { color: var(--red); font-size: 12px; margin-top: 10px; display: none; }
+
+/* ── APP SHELL ── */
+#app { display: none; flex-direction: column; min-height: 100vh; }
+
+/* ── TOPBAR ── */
+.topbar {
+  background: var(--dark);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+
+.topbar-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 3px;
+  color: var(--gold);
+}
+
+.topbar-search {
+  flex: 1;
+  max-width: 400px;
+  margin: 0 24px;
+  position: relative;
+}
+
+.topbar-search input {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 12px 8px 36px;
+  color: var(--white);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.topbar-search input:focus { border-color: var(--gold); }
+.topbar-search input::placeholder { color: var(--muted); }
+.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 16px; }
+
+.topbar-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.nav-btn:hover { color: var(--white); background: var(--card); }
+.nav-btn.active { color: var(--gold); background: var(--gold-glow); }
+
+/* ── MAIN CONTENT ── */
+.main { padding: 24px 20px; max-width: 1400px; margin: 0 auto; }
+
+/* ── SEARCH RESULTS ── */
+.search-results {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0; right: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-top: 4px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 200;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+.search-result-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.search-result-item:hover { background: var(--border); }
+.search-result-item:last-child { border-bottom: none; }
+
+.result-sport-badge {
+  font-size: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  min-width: 40px;
+  text-align: center;
+}
+.badge-mma { background: var(--red-bg); color: #ff6666; border: 1px solid rgba(204,51,51,0.3); }
+.badge-mt { background: var(--amber-bg); color: #ffaa44; border: 1px solid rgba(196,127,0,0.3); }
+.badge-grapple { background: rgba(58,110,168,0.15); color: #6699cc; border: 1px solid rgba(58,110,168,0.3); }
+
+.result-info { flex: 1; }
+.result-name { font-size: 14px; font-weight: 500; }
+.result-detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.result-flag { color: var(--red); font-size: 12px; }
+
+/* ── DASHBOARD ── */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px 16px;
+  transition: border-color 0.2s;
+}
+.stat-card:hover { border-color: var(--gold-dim); }
+.stat-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  color: var(--gold);
+  line-height: 1;
+}
+.stat-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.flags-grid {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.flag-card {
+  background: var(--red-bg);
+  border: 1px solid rgba(204,51,51,0.3);
+  border-radius: 6px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.flag-card:hover { background: rgba(204,51,51,0.15); }
+.flag-icon { color: var(--red); font-size: 16px; }
+.flag-text { flex: 1; }
+.flag-name { font-size: 14px; font-weight: 500; }
+.flag-detail { font-size: 12px; color: #ff8888; margin-top: 2px; }
+.flag-sport { font-size: 10px; color: var(--muted); }
+
+/* ── ROSTER TABLE ── */
+.roster-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.filter-btn:hover, .filter-btn.active { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+
+.add-btn {
+  background: var(--gold);
+  border: none;
+  color: var(--black);
+  padding: 8px 18px;
+  border-radius: 4px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  margin-left: auto;
+  transition: opacity 0.2s;
+}
+.add-btn:hover { opacity: 0.85; }
+
+.table-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead th {
+  background: var(--dark);
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+tbody tr:hover { background: rgba(201,168,76,0.05); }
+tbody tr:last-child { border-bottom: none; }
+
+tbody td {
+  padding: 10px 14px;
+  vertical-align: middle;
+}
+
+.td-name { font-weight: 500; color: var(--white); }
+.td-gym { color: var(--muted); }
+.td-record { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #aaa; }
+.td-flag { color: var(--red); font-size: 12px; }
+
+.weight-pill {
+  background: var(--border);
+  color: var(--white);
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+
+.camo-ok { color: var(--green); font-size: 12px; }
+.camo-warn { color: var(--red); font-size: 12px; font-weight: 600; }
+.camo-unknown { color: var(--muted); font-size: 12px; }
+
+/* ── FIGHTER PROFILE ── */
+#profile-panel {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: 420px;
+  background: var(--dark);
+  border-left: 1px solid var(--border);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  overflow: hidden;
+}
+#profile-panel.open { transform: translateX(0); }
+
+.profile-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+
+.profile-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+  float: right;
+  margin-top: -4px;
+}
+.profile-close:hover { color: var(--white); }
+
+.profile-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 2px;
+  color: var(--white);
+  margin-top: 4px;
+}
+
+.profile-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.meta-pill {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 2px;
+  background: var(--border);
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.profile-body { flex: 1; overflow-y: auto; padding: 20px; }
+
+.profile-section { margin-bottom: 20px; }
+.profile-section-title {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+
+.profile-field {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.profile-field:last-child { border-bottom: none; }
+.field-label { color: var(--muted); }
+.field-val { color: var(--white); font-weight: 500; text-align: right; max-width: 60%; }
+
+.note-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.note-meta { font-size: 11px; color: var(--muted); margin-bottom: 6px; font-family: 'JetBrains Mono', monospace; }
+.note-text { font-size: 13px; line-height: 1.5; }
+
+.note-input-area {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--card);
+}
+
+.note-textarea {
+  width: 100%;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  color: var(--white);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  resize: none;
+  height: 80px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.note-textarea:focus { border-color: var(--gold); }
+
+.note-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  align-items: center;
+}
+
+.mic-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.mic-btn:hover { border-color: var(--gold); color: var(--gold); }
+.mic-btn.recording { border-color: var(--red); color: var(--red); background: var(--red-bg); animation: pulse 1s infinite; }
+
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+.save-note-btn {
+  flex: 1;
+  background: var(--gold);
+  border: none;
+  border-radius: 4px;
+  padding: 8px;
+  color: var(--black);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.save-note-btn:hover { opacity: 0.85; }
+
+/* ── FIGHT CARDS ── */
+.fight-card-grid { display: grid; gap: 10px; }
+
+.bout-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  transition: border-color 0.2s;
+}
+.bout-card:hover { border-color: var(--gold-dim); }
+.bout-card.flag { border-color: rgba(204,51,51,0.4); background: var(--red-bg); }
+
+.bout-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.bout-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: var(--gold);
+}
+.bout-weight {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+.bout-status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: 1px;
+}
+.status-confirmed { background: var(--green-bg); color: #66bb77; }
+.status-pending { background: var(--amber-bg); color: #ffaa44; }
+
+.bout-fighters {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  align-items: center;
+}
+.bout-fighter { }
+.bout-fighter-name { font-size: 14px; font-weight: 500; }
+.bout-fighter-gym { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.bout-fighter-record { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #888; margin-top: 2px; }
+.bout-fighter.right { text-align: right; }
+.bout-vs { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--gold-dim); text-align: center; }
+.bout-notes { font-size: 11px; color: var(--red); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+
+/* ── NOTES LOG ── */
+.notes-list { display: grid; gap: 8px; }
+.log-note {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+.log-note-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.log-note-who { font-size: 12px; color: var(--gold); font-family: 'JetBrains Mono', monospace; }
+.log-note-when { font-size: 11px; color: var(--muted); }
+.log-note-fighter { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.log-note-text { font-size: 13px; color: #bbb; line-height: 1.5; }
+
+/* ── CAMO PAGE ── */
+.camo-grid { display: grid; gap: 8px; }
+.camo-row {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.camo-row.flag { border-color: rgba(204,51,51,0.4); background: var(--red-bg); }
+.camo-row.clear { border-color: rgba(58,138,74,0.3); }
+.camo-fighter { flex: 1; }
+.camo-fighter-name { font-size: 14px; font-weight: 500; }
+.camo-fighter-detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.camo-status-text { font-size: 12px; font-weight: 600; }
+.camo-flag-text { color: var(--red); }
+.camo-clear-text { color: var(--green); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 800;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 28px;
+  width: 480px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.modal-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  margin-bottom: 20px;
+}
+.form-row { margin-bottom: 14px; }
+.form-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; display: block; }
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  color: var(--white);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--gold); }
+.form-select option { background: var(--dark); }
+.form-textarea { resize: vertical; height: 80px; }
+.form-row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.modal-save {
+  flex: 1;
+  background: var(--gold);
+  border: none;
+  border-radius: 4px;
+  padding: 12px;
+  color: var(--black);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.modal-save:hover { opacity: 0.85; }
+.modal-cancel {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px 20px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.modal-cancel:hover { border-color: var(--white); color: var(--white); }
+
+/* ── LOADING / EMPTY ── */
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.loading-spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--card);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  padding: 12px 24px;
+  font-size: 13px;
+  color: var(--white);
+  z-index: 2000;
+  transition: transform 0.3s ease;
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.error { border-color: var(--red); }
+
+/* ── STICKY NOTES ── */
+.sticky-notes-area {
+  background: #1a1800;
+  border: 1px solid #3a3200;
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 24px;
+}
+.sticky-notes-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 14px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sticky-note-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #2a2400;
+  font-size: 13px;
+  color: #e8e0b8;
+}
+.sticky-note-item:last-of-type { border-bottom: none; }
+.sticky-note-del {
+  background: none;
+  border: none;
+  color: #554400;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+  flex-shrink: 0;
+  min-height: 32px;
+  line-height: 1;
+}
+.sticky-note-del:active { color: var(--red); }
+.sticky-input-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.sticky-input {
+  flex: 1;
+  background: #111000;
+  border: 1px solid #3a3200;
+  border-radius: 4px;
+  color: var(--white);
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+}
+.sticky-input:focus { outline: none; border-color: var(--gold); }
+.sticky-add-btn {
+  background: var(--gold);
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 14px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ── COACH PROFILE PANEL ── */
+#coach-panel {
+  position: fixed;
+  top: 0; right: 0;
+  width: 340px;
+  height: 100vh;
+  background: var(--dark);
+  border-left: 1px solid var(--border);
+  z-index: 300;
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#coach-panel.open { transform: translateX(0); }
+@media (max-width: 600px) { #coach-panel { width: 100%; } }
+
+/* ── EDIT BOUT MODAL ── */
+#edit-bout-modal { z-index: 400; }
+.field-link {
+  color: var(--gold) !important;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+}
+.field-link:active { opacity: 0.7; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+  .topbar-nav { display: none; }
+  #profile-panel { width: 100%; }
+  .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+  /* Bigger tap targets */
+  .filter-btn { min-height: 38px; padding: 8px 14px; font-size: 12px; }
+  .roster-table td { padding: 13px 8px; }
+  .bout-card { padding: 14px; }
+  /* Search bar — prevent iOS zoom */
+  .search-input { height: 44px; font-size: 16px !important; }
+  input, textarea, select { font-size: 16px !important; }
+  #note-textarea { min-height: 80px; }
+  /* Dashboard */
+  .stat-card { padding: 14px 10px; }
+  .stat-num { font-size: 28px; }
+  /* Login */
+  .login-logo { font-size: 32px; }
+}
+
+.tab-bar {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--dark);
+  border-top: 1px solid var(--border);
+  padding: 8px 0 12px;
+  z-index: 100;
+  justify-content: space-around;
+}
+
+@media (max-width: 600px) {
+  .tab-bar { display: flex; }
+  .main { padding-bottom: 80px; }
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  transition: color 0.2s;
+}
+.tab-btn .tab-icon { font-size: 20px; }
+.tab-btn.active { color: var(--gold); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">CHAMPIONS AI</div>
+    <div class="login-sub">Bout Creator Tool</div>
+    <button class="login-btn" onclick="enterApp()">ENTER</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-logo">CHAMPIONS AI</div>
+    <div class="topbar-search">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="global-search" placeholder="Search fighters, gyms..." oninput="handleSearch(this.value)" autocomplete="off">
+      <div class="search-results" id="search-dropdown"></div>
+    </div>
+    <div class="topbar-nav">
+      <button class="nav-btn active" onclick="showView('dashboard')">Dashboard</button>
+      <button class="nav-btn" onclick="showView('matchup')">Matchup</button>
+      <button class="nav-btn" onclick="showView('cards')">Cards</button>
+      <button class="nav-btn" onclick="showView('mma')">MMA</button>
+      <button class="nav-btn" onclick="showView('mt')">Muay Thai</button>
+      <button class="nav-btn" onclick="showView('grapple')">Grappling</button>
+      <button class="nav-btn" onclick="showView('gyms')">Gyms</button>
+      <button class="nav-btn" onclick="showView('coaches')">Coaches</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="main-content">
+    <div class="loading"><div class="loading-spinner"></div>Loading fighter data...</div>
+  </div>
+
+  <!-- MOBILE TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showView('dashboard')"><span class="tab-icon">🏠</span>Home</button>
+    <button class="tab-btn" onclick="showView('matchup')" style="color:var(--gold)"><span class="tab-icon">🔍</span>Matchup</button>
+    <button class="tab-btn" onclick="showView('cards')"><span class="tab-icon">📋</span>Cards</button>
+    <button class="tab-btn" onclick="showView('mma')"><span class="tab-icon">🥊</span>MMA</button>
+    <button class="tab-btn" onclick="showView('mt')"><span class="tab-icon">🦵</span>MT</button>
+    <button class="tab-btn" onclick="showView('grapple')"><span class="tab-icon">🥋</span>Grapple</button>
+    <button class="tab-btn" onclick="showView('gyms')"><span class="tab-icon">⚔️</span>Gyms</button>
+    <button class="tab-btn" onclick="showView('coaches')"><span class="tab-icon">🧑‍🏫</span>Coaches</button>
+  </div>
+</div>
+
+<!-- FIGHTER PROFILE PANEL -->
+<!-- COACH PROFILE PANEL -->
+<div id="coach-panel">
+  <div class="profile-header">
+    <button class="profile-close" onclick="closeCoachPanel()">✕</button>
+    <div id="coach-sport-badge"></div>
+    <div class="profile-name" id="coach-name">—</div>
+    <div class="profile-meta" id="coach-meta"></div>
+  </div>
+  <div class="profile-body" id="coach-body" style="flex:1;overflow-y:auto;padding:16px;"></div>
+  <div class="note-input-area">
+    <div class="profile-section-title" style="margin-bottom:8px;">ADD NOTE</div>
+    <textarea class="note-textarea" id="coach-note-textarea" placeholder="Log a note about this coach/gym..."></textarea>
+    <div class="note-actions">
+      <button class="save-note-btn" onclick="saveCoachNote()">SAVE NOTE</button>
+    </div>
+  </div>
+</div>
+
+<!-- FIGHTER PROFILE PANEL -->
+<div id="profile-panel">
+  <div class="profile-header">
+    <button class="profile-close" onclick="closeProfile()">✕</button>
+    <div id="profile-sport-badge"></div>
+    <div class="profile-name" id="profile-name">—</div>
+    <div class="profile-meta" id="profile-meta"></div>
+  </div>
+  <div class="profile-body" id="profile-body"></div>
+  <div class="note-input-area">
+    <div class="profile-section-title" style="margin-bottom:8px;">ADD NOTE</div>
+    <textarea class="note-textarea" id="note-textarea" placeholder="Type or use mic to log a note..."></textarea>
+    <div class="note-actions">
+      <button class="mic-btn" id="mic-btn" onclick="toggleMic()" title="Voice note">🎤</button>
+      <button class="save-note-btn" onclick="saveNote()">SAVE NOTE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD FIGHTER MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-title">ADD FIGHTER</div>
+    <div class="form-row">
+      <label class="form-label">Fighter Name</label>
+      <input class="form-input" id="f-name" placeholder="Full name">
+    </div>
+    <div class="form-row-grid">
+      <div class="form-row">
+        <label class="form-label">Sport</label>
+        <select class="form-select" id="f-sport">
+          <option value="MMA">MMA</option>
+          <option value="MT">Muay Thai</option>
+          <option value="Grappling">Grappling</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">M / F</label>
+        <select class="form-select" id="f-gender">
+          <option value="M">M</option>
+          <option value="F">F</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row-grid">
+      <div class="form-row">
+        <label class="form-label">Weight</label>
+        <input class="form-input" id="f-weight" placeholder="e.g. 155">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Age</label>
+        <input class="form-input" id="f-age" placeholder="Age">
+      </div>
+    </div>
+    <div class="form-row-grid">
+      <div class="form-row">
+        <label class="form-label">Record</label>
+        <input class="form-input" id="f-record" placeholder="e.g. 2-1">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Height</label>
+        <input class="form-input" id="f-height" placeholder="e.g. 5'10">
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Gym</label>
+      <input class="form-input" id="f-gym" placeholder="Gym name">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Coach / Contact</label>
+      <input class="form-input" id="f-contact" placeholder="Coach name">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="f-notes" placeholder="Any initial notes..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-save" onclick="saveFighter()">SAVE FIGHTER</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────
+const SHEET_ID = '1fxyLa4EDMTHjTKSlWx0BLHYZ_Y4miCU1wFOciNCDAdA';
+const API_KEY  = 'AIzaSyAixUhlqbEPOjUh4b6zSQtq43pnTZUU1eg';
+
+const TABS = {
+  mma:     'MMA Roster',
+  mt:      'Muay Thai Roster',
+  grapple: 'Grappling Roster',
+  nm5card: 'NM5 Fight Card',
+  nm6card: 'NM6 Fight Card',
+  notes:   'Notes Log',
+  gyms:    'Gyms',
+  camo:    'CAMO Status',
+  iska:    'ISKA Status'
+};
+
+// ── STATE ────────────────────────────────────────────────────────
+let data = { mma:[], mt:[], grapple:[], nm5card:[], nm6card:[], notes:[], gyms:[], camo:[], iska:[] };
+let currentView = 'dashboard';
+let currentFighter = null;
+let recognition = null;
+let isRecording = false;
+let localNotes = JSON.parse(localStorage.getItem('nmfc_notes') || '[]');
+
+// ── ENTER APP ────────────────────────────────────────────────────
+function enterApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('app').style.flexDirection = 'column';
+  loadAllData();
+}
+
+// ── DATA LOADING ─────────────────────────────────────────────────
+async function fetchSheet(tabName) {
+  const enc = encodeURIComponent(tabName);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${enc}!A1:Z500?key=${API_KEY}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    return json.values || [];
+  } catch(e) {
+    console.error('Sheet fetch error:', tabName, e);
+    return [];
+  }
+}
+
+function parseRoster(rows) {
+  if (!rows.length) return [];
+  return rows.slice(2).filter(r => r && r[1] && r[1].trim()).map(r => {
+    while (r.length < 15) r.push('');
+    return {
+      weight:   r[0]  || '',
+      name:     r[1]  || '',
+      gender:   r[2]  || '',
+      age:      r[3]  || '',
+      record:   r[4]  || '',
+      height:   r[5]  || '',
+      gym:      r[6]  || '',
+      contact:  r[7]  || '',
+      notes:    r[8]  || '',
+      flag:     r[9]  || '',
+      instagram:r[10] || '',
+      gymIg:    r[11] || '',
+      phone:    r[12] || '',
+      dob:      r[13] || '',
+      email:    r[14] || ''
+    };
+  });
+}
+
+function parseGrapple(rows) {
+  if (!rows.length) return [];
+  return rows.slice(2).filter(r => r && r[1] && r[1].trim()).map(r => ({
+    weight:  r[0] || '',
+    name:    r[1] || '',
+    gender:  r[2] || '',
+    age:     r[3] || '',
+    record:  r[4] || '',
+    gym:     r[5] || '',
+    notes:   r[6] || '',
+    flag:    ''
+  }));
+}
+
+function parseFightCard(rows) {
+  if (!rows.length) return [];
+  const bouts = [];
+  for (let i = 2; i < rows.length - 1; i++) {
+    const r1 = rows[i];
+    const r2 = rows[i+1];
+    if (!r1 || !r1[0]) continue;
+    const matchNum = r1[0];
+    if (!matchNum.toString().toLowerCase().includes('match')) continue;
+    const f1row = rows[i+1];
+    const f2row = rows[i+2];
+    if (!f1row || !f2row) continue;
+    bouts.push({
+      match:    matchNum,
+      weight:   f1row[0] || r1[0] || '',
+      gym1:     f1row[1] || '',
+      fighter1: f1row[2] || '',
+      record1:  f1row[3] || '',
+      gym2:     f2row[1] || '',
+      fighter2: f2row[2] || '',
+      record2:  f2row[3] || '',
+      rounds:   f1row[5] || '',
+      boutNotes:f1row[8] || f1row[9] || '',
+      status:   f1row[4] || '',
+      contacts: (f1row[7] || '') + (f2row[7] ? ' / '+f2row[7] : '')
+    });
+    i += 2;
+  }
+  return bouts;
+}
+
+function parseNotes(rows) {
+  if (!rows.length) return [];
+  return rows.slice(2).filter(r => r && r[4] && r[4].trim()).map(r => ({
+    date:    r[0] || '',
+    by:      r[1] || '',
+    fighter: r[2] || '',
+    sport:   r[3] || '',
+    note:    (r[4] || '').replace(/\bNM5\b/g,'NMFC5').replace(/\bNM6\b/g,'NMFC6'),
+    followup:r[5] || '',
+    gym:     r[6] || ''
+  }));
+}
+
+function parseCamo(rows) {
+  if (!rows.length) return [];
+  return rows.slice(2).filter(r => r && r[0] && r[0].trim()).map(r => ({
+    name:    r[0] || '',
+    sport:   r[1] || '',
+    gym:     r[2] || '',
+    camoId:  r[3] || '',
+    status:  r[4] || '',
+    checked: r[5] || '',
+    notes:   r[6] || ''
+  }));
+}
+
+async function loadAllData() {
+  showLoading();
+  const [mmaR, mtR, grR, nm5R, nm6R, notesR, gymsR, camoR, iskaR] = await Promise.all([
+    fetchSheet(TABS.mma),
+    fetchSheet(TABS.mt),
+    fetchSheet(TABS.grapple),
+    fetchSheet(TABS.nm5card),
+    fetchSheet(TABS.nm6card),
+    fetchSheet(TABS.notes),
+    fetchSheet(TABS.gyms),
+    fetchSheet(TABS.camo),
+    fetchSheet(TABS.iska)
+  ]);
+
+  data.mma     = parseRoster(mmaR);
+  data.mt      = parseRoster(mtR);
+  data.grapple = parseGrapple(grR);
+  data.nm5card = parseBoutCard(nm5R);
+  data.nm6card = parseBoutCard(nm6R);
+  data.notes   = parseNotes(notesR);
+  data.gyms = gymsR.slice(2).filter(r=>r&&r[0]).map(r => {
+    while (r.length < 7) r.push('');
+    return {name:r[0],contact:r[1]||'',sports:r[2]||'',notes:r[3]||'',phone:r[5]||'',instagram:r[6]||''};
+  });
+  data.camo    = parseCamo(camoR);
+  data.iska    = parseCamo(iskaR); // same structure: name, sport, gym, licenseId, status, checked, notes
+
+  // Merge local notes
+  data.notes = [...localNotes, ...data.notes];
+
+  // Debug: log first fighter with IG and first gym with phone
+  const sampleIg = data.mma.find(f=>f.instagram) || data.mt.find(f=>f.instagram);
+  const sampleGym = data.gyms.find(g=>g.phone);
+  console.log('[Champions AI] Sample fighter IG:', sampleIg ? `${sampleIg.name} → ${sampleIg.instagram}` : 'NONE — Instagram column empty in sheet');
+  console.log('[Champions AI] Sample gym phone:', sampleGym ? `${sampleGym.name} → ${sampleGym.phone}` : 'NONE — Phone column empty in sheet');
+  console.log('[Champions AI] MMA roster cols check (row 0):', data.mma[0] ? JSON.stringify(data.mma[0]) : 'empty');
+
+  showView('dashboard');
+
+  // Pre-build gym registry so coach panel works before Gyms tab is visited
+  const gymMap = {};
+  const addF = (f, sport) => {
+    const key = (f.gym||'Unknown Gym').trim();
+    if (!gymMap[key]) gymMap[key] = {fighters:[], contact:'', sports:new Set(), phone:'', instagram:''};
+    gymMap[key].fighters.push({...f, sport});
+    gymMap[key].sports.add(sport.toUpperCase());
+  };
+  data.mma.forEach(f => addF(f,'MMA'));
+  data.mt.forEach(f => addF(f,'MT'));
+  data.grapple.forEach(f => addF(f,'GRP'));
+  data.gyms.forEach(g => {
+    const key = (g.name||'').trim();
+    if (!key) return;
+    if (!gymMap[key]) gymMap[key] = {fighters:[], contact:'', sports:new Set(), phone:'', instagram:''};
+    if (g.contact)   gymMap[key].contact   = g.contact;
+    if (g.phone)     gymMap[key].phone     = g.phone;
+    if (g.instagram) gymMap[key].instagram = g.instagram;
+  });
+  _gymRegistry = gymMap;
+}
+
+function parseBoutCard(rows) {
+  if (!rows.length) return [];
+  const bouts = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || !r[0]) continue;
+    const cell0 = r[0].toString().toLowerCase();
+    if (cell0.includes('match')) {
+      const f1 = rows[i+1];
+      const f2 = rows[i+2];
+      if (f1 && f2) {
+        bouts.push({
+          match:    r[0],
+          weight:   f1[0] || '',
+          gym1:     f1[1] || '',
+          fighter1: f1[2] || '',
+          record1:  f1[3] || '',
+          status:   f1[4] || '',
+          rounds:   f1[5] || '',
+          title:    f1[6] || '',
+          contact1: f1[7] || '',
+          boutNotes:f1[8] || '',
+          gym2:     f2[1] || '',
+          fighter2: f2[2] || '',
+          record2:  f2[3] || '',
+          contact2: f2[7] || ''
+        });
+        i += 2;
+      }
+    }
+  }
+  return bouts;
+}
+
+// ── VIEWS ────────────────────────────────────────────────────────
+function showLoading() {
+  document.getElementById('main-content').innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading...</div>';
+}
+
+function showView(view) {
+  currentView = view;
+  closeProfile();
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+  const viewMap = {dashboard:0, matchup:1, cards:2, mma:3, mt:4, grapple:5, gyms:6, coaches:7};
+  const navBtns = document.querySelectorAll('.nav-btn');
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  if (navBtns[viewMap[view]]) navBtns[viewMap[view]].classList.add('active');
+  const tabMap = {dashboard:0, matchup:1, cards:2, mma:3, mt:4, grapple:5, gyms:6, coaches:7};
+  if (tabBtns[tabMap[view]]) tabBtns[tabMap[view]].classList.add('active');
+
+  const mc = document.getElementById('main-content');
+
+  if (view === 'dashboard') renderDashboard(mc);
+  else if (view === 'matchup') renderMatchupTool(mc);
+  else if (view === 'mma') renderRoster(mc, data.mma, 'MMA', 'mma');
+  else if (view === 'mt') renderRoster(mc, data.mt, 'MUAY THAI', 'mt');
+  else if (view === 'grapple') renderRoster(mc, data.grapple, 'GRAPPLING', 'grapple');
+  else if (view === 'gyms') renderGyms(mc);
+  else if (view === 'coaches') renderCoaches(mc);
+  else if (view === 'cards') renderCardBuilder(mc);
+  else if (view === 'notes') renderNotes(mc);
+  else if (view === 'camo') renderCamo(mc);
+  else if (view === 'iska') renderIska(mc);
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────
+function renderDashboard(mc) {
+  const camoFlags = data.camo.filter(c => c.status && c.status.includes('⚑'));
+  const totalFighters = data.mma.length + data.mt.length + data.grapple.length;
+
+  // Next full card — always cardEvents[0] (NMFC6 seeded, future events added after)
+  const nm6bouts = cardEvents[0] ? cardEvents[0].bouts : [];
+  const nextEventMeta = cardEvents[0] || {};
+
+  // Build set of fighter names on next card
+  const nextEventFighterNames = new Set();
+  nm6bouts.forEach(b => {
+    if (b.fighter1) nextEventFighterNames.add(b.fighter1.toLowerCase().trim());
+    if (b.fighter2) nextEventFighterNames.add(b.fighter2.toLowerCase().trim());
+  });
+
+  // Flags: only fighters on next card, sourced from CAMO tab only
+  let flagsHtml = '';
+  const eventCamoFlags = camoFlags.filter(f => nextEventFighterNames.has(f.name.toLowerCase().trim()));
+
+  if (nextEventFighterNames.size === 0) {
+    flagsHtml = '<div class="empty" style="font-size:13px;color:var(--muted)">No fighters booked yet</div>';
+  } else {
+    eventCamoFlags.forEach(f => {
+      flagsHtml += `<div class="flag-card" onclick="searchAndOpen('${escHtml(f.name)}')">
+        <span class="flag-icon">⚑</span>
+        <div class="flag-text">
+          <div class="flag-name">${escHtml(f.name)}</div>
+          <div class="flag-detail">${escHtml(f.status)}</div>
+        </div>
+        <span class="flag-sport">${escHtml(f.sport)}</span>
+      </div>`;
+    });
+    if (!flagsHtml) {
+      flagsHtml = `<div class="empty">All fighters on ${escHtml(nextEventMeta.name||'NMFC6')} are clear ✓</div>`;
+    }
+  }
+
+  // Recent notes
+  const recentNotes = [...data.notes].slice(0, 4);
+  let recentHtml = recentNotes.length ? recentNotes.map(n => `
+    <div class="log-note">
+      <div class="log-note-header">
+        <span class="log-note-who">${escHtml(n.by||'Team')}</span>
+        <span class="log-note-when">${escHtml(n.date)}</span>
+      </div>
+      <div class="log-note-fighter">${escHtml(n.fighter)} <span style="color:var(--muted);font-size:11px;">${escHtml(n.sport)}</span></div>
+      <div class="log-note-text">${escHtml(n.note)}</div>
+    </div>`).join('') : '<div class="empty">No notes yet</div>';
+
+  // Next full card — from Sheet nm6card
+  const confirmedCount = nm6bouts.filter(b => b.status && b.status.toLowerCase().includes('confirm')).length;
+  let nextCardHtml = '';
+  if (nm6bouts.length > 0) {
+    nextCardHtml = `
+      <div class="section-title" style="margin-top:0">📋 NEXT FULL CARD</div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:16px 20px;margin-bottom:28px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--white)">${escHtml(nextEventMeta.name||'NMFC6')}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${escHtml(nextEventMeta.date||'July 18, 2026')} · ${escHtml(nextEventMeta.venue||'DNA Lounge · San Francisco')}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--gold)">${nm6bouts.length} bouts</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${confirmedCount} confirmed</div>
+          </div>
+        </div>
+        ${nm6bouts.map((b, i) => {
+          const hasConflict = b.fighter1 && b.fighter2 && b.gym1 && b.gym2 && b.gym1 === b.gym2;
+          const isConfirmed = b.status && b.status.toLowerCase().includes('confirm');
+          const f1s = (b.fighter1||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+          const f2s = (b.fighter2||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+          const g1s = (b.gym1||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+          const g2s = (b.gym2||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+          return `<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);${i===nm6bouts.length-1?'border-bottom:none':''}">
+            <div>
+              <div style="font-size:13px;font-weight:500;cursor:pointer;color:var(--white);text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(201,168,76,0.4)" onclick="searchAndOpen('${f1s}')">${escHtml(b.fighter1||'TBD')}</div>
+              <div style="font-size:11px;color:var(--gold-dim);cursor:pointer" onclick="openCoachPanel('${g1s}')">${escHtml(b.gym1||'')}</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--gold-dim)">VS</div>
+              ${isConfirmed ? `<div style="font-size:9px;color:#66bb77;letter-spacing:1px;font-family:'Bebas Neue',sans-serif">CONF</div>` : `<div style="font-size:9px;color:var(--amber);letter-spacing:1px;font-family:'Bebas Neue',sans-serif">PEND</div>`}
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:13px;font-weight:500;cursor:pointer;color:var(--white);text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(201,168,76,0.4)" onclick="searchAndOpen('${f2s}')">${escHtml(b.fighter2||'TBD')}</div>
+              <div style="font-size:11px;color:var(--gold-dim);cursor:pointer;text-align:right" onclick="openCoachPanel('${g2s}')">${escHtml(b.gym2||'')}</div>
+            </div>
+            ${hasConflict ? `<div style="grid-column:1/-1;font-size:11px;color:var(--red);padding-top:4px">⚑ Same gym conflict</div>` : ''}
+          </div>`;
+        }).join('')}
+        <div style="margin-top:12px;text-align:right">
+          <button onclick="showView('cards')" style="background:none;border:1px solid var(--gold-dim);color:var(--gold);padding:6px 16px;border-radius:4px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;">OPEN CARD BUILDER →</button>
+        </div>
+      </div>`;
+  } else {
+    nextCardHtml = `
+      <div class="section-title" style="margin-top:0">📋 NEXT FULL CARD — NMFC6</div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:24px 20px;margin-bottom:28px;text-align:center;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--white);margin-bottom:4px">NMFC6</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">July 18 · DNA Lounge · San Francisco</div>
+        <div style="color:var(--muted);font-size:13px;margin-bottom:12px">No bouts loaded from sheet yet</div>
+        <button onclick="showView('cards')" style="background:none;border:1px solid var(--gold-dim);color:var(--gold);padding:6px 16px;border-radius:4px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;">VIEW CARD BUILDER →</button>
+      </div>`;
+  }
+
+  // Countdown to show — pulls from next event date
+  const showDateStr = nextEventMeta.date || 'July 18, 2026';
+  const showDate = new Date(showDateStr);
+  const nowDate = new Date();
+  const diffMs = showDate - nowDate;
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const isShowtime = diffDays <= 0;
+  const countdownVal = isShowtime ? '🔥' : diffDays;
+  const countdownLabel = isShowtime ? 'SHOWTIME' : 'Days to Showtime';
+  const countdownColor = isShowtime ? 'var(--red)' : diffDays <= 7 ? 'var(--amber)' : 'var(--gold)';
+
+  mc.innerHTML = `
+    <div class="dashboard-grid">
+      <div class="stat-card"><div class="stat-num">${data.mma.length}</div><div class="stat-label">MMA Fighters</div></div>
+      <div class="stat-card"><div class="stat-num">${data.mt.length}</div><div class="stat-label">Muay Thai</div></div>
+      <div class="stat-card"><div class="stat-num">${data.grapple.length}</div><div class="stat-label">Grappling</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--red)">${eventCamoFlags.length}</div><div class="stat-label">Card Flags</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:${countdownColor}">${countdownVal}</div><div class="stat-label">${countdownLabel}</div></div>
+    </div>
+
+    <!-- BOUT CREATOR SHORTCUT -->
+    <button onclick="showView('matchup')" style="width:100%;background:linear-gradient(135deg,#2a1f00,#1a1200);border:1px solid var(--gold);border-radius:8px;padding:18px 20px;margin-bottom:16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;text-align:left;">
+      <div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--gold)">🔍 BOUT CREATOR</div>
+        <div style="font-size:13px;color:#a08030;margin-top:3px">Search database · Find opponents · Build the card</div>
+      </div>
+      <div style="font-size:28px;color:var(--gold);opacity:0.7">›</div>
+    </button>
+
+    <!-- STICKY NOTES -->
+    <div class="sticky-notes-area">
+      <div class="sticky-notes-title">📌 STICKY NOTES</div>
+      <div id="sticky-notes-list">${renderStickyNotes()}</div>
+      <div class="sticky-input-row">
+        <input class="sticky-input" id="sticky-input" placeholder="Add a quick note..." onkeydown="if(event.key==='Enter')addStickyNote()">
+        <button class="sticky-add-btn" onclick="addStickyNote()">ADD</button>
+      </div>
+    </div>
+
+    ${nextCardHtml}
+
+    <div class="section-title">⚑ ELIGIBILITY FLAGS — ${escHtml(nextEventMeta.name||'NMFC6')}</div>
+    <div class="flags-grid" style="margin-bottom:28px">${flagsHtml}</div>
+
+    <div class="section-title">RECENT NOTES</div>
+    <div class="notes-list">${recentHtml}</div>
+  `;
+}
+
+// ── ROSTER ───────────────────────────────────────────────────────
+function renderRoster(mc, fighters, title, sport) {
+  const flagged = fighters.filter(f=>f.flag).length;
+  mc.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div>
+        <div class="section-title">${title} ROSTER</div>
+        <div style="font-size:12px;color:var(--muted)">${fighters.length} fighters · ${flagged} flagged</div>
+      </div>
+      <button class="add-btn" onclick="openAddModal('${sport}')">+ ADD FIGHTER</button>
+    </div>
+    <div class="roster-controls">
+      <button class="filter-btn active" onclick="filterRoster(this,'all','${sport}')">All</button>
+      <button class="filter-btn" onclick="filterRoster(this,'M','${sport}')">Male</button>
+      <button class="filter-btn" onclick="filterRoster(this,'F','${sport}')">Female</button>
+      <button class="filter-btn" onclick="filterRoster(this,'flag','${sport}')">⚑ Flagged</button>
+    </div>
+    <div class="table-wrap">
+      <table id="roster-table">
+        <thead><tr>
+          <th>Weight</th><th>Fighter</th><th>M/F</th><th>Age</th>
+          <th>Record</th><th>Gym</th><th>Contact</th><th>Notes</th><th>Flag</th>
+        </tr></thead>
+        <tbody id="roster-body"></tbody>
+      </table>
+    </div>`;
+  renderRosterRows(fighters, sport);
+}
+
+function renderRosterRows(fighters, sport) {
+  const tbody = document.getElementById('roster-body');
+  if (!tbody) return;
+  if (!fighters.length) { tbody.innerHTML = '<tr><td colspan="9" class="empty">No fighters found</td></tr>'; return; }
+  tbody.innerHTML = fighters.map(f => `
+    <tr onclick="openFighterProfile(${safeJson(f)}, '${sport}')">
+      <td><span class="weight-pill">${escHtml(f.weight)}</span></td>
+      <td class="td-name">${escHtml(f.name)}</td>
+      <td style="color:var(--muted)">${escHtml(f.gender)}</td>
+      <td style="color:var(--muted)">${escHtml(String(f.age))}</td>
+      <td class="td-record">${escHtml(f.record)}</td>
+      <td class="td-gym">${escHtml(f.gym)}</td>
+      <td class="td-gym">${escHtml(f.contact)}</td>
+      <td style="font-size:12px;color:#999;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(f.notes)}</td>
+      <td class="${f.flag ? 'td-flag' : ''}">${f.flag ? '⚑' : ''}</td>
+    </tr>`).join('');
+}
+
+function filterRoster(btn, filter, sport) {
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const src = sport === 'mma' ? data.mma : sport === 'mt' ? data.mt : data.grapple;
+  let filtered;
+  if (filter === 'all') filtered = src;
+  else if (filter === 'flag') filtered = src.filter(f=>f.flag);
+  else filtered = src.filter(f=>f.gender===filter);
+  renderRosterRows(filtered, sport);
+}
+
+// ── GYMS ─────────────────────────────────────────────────────────
+let _gymRegistry = {};
+
+function renderGyms(mc) {
+  _gymRegistry = {};
+
+  // Build gym map from rosters
+  const gymMap = {};
+  const addFighter = (f, sport) => {
+    const key = (f.gym || 'Unknown Gym').trim();
+    if (!gymMap[key]) gymMap[key] = { fighters: [], contact:'', sports: new Set(), phone:'', instagram:'' };
+    gymMap[key].fighters.push({...f, sport});
+    gymMap[key].sports.add(sport.toUpperCase());
+  };
+  data.mma.forEach(f => addFighter(f, 'MMA'));
+  data.mt.forEach(f => addFighter(f, 'MT'));
+  data.grapple.forEach(f => addFighter(f, 'GRP'));
+
+  // Merge in gyms tab data
+  data.gyms.forEach(g => {
+    const key = (g.name || '').trim();
+    if (!key) return;
+    if (!gymMap[key]) gymMap[key] = { fighters:[], contact:'', sports: new Set(), phone:'', instagram:'' };
+    if (g.contact)   gymMap[key].contact   = g.contact;
+    if (g.phone)     gymMap[key].phone     = g.phone;
+    if (g.instagram) gymMap[key].instagram = g.instagram;
+  });
+
+  // Store in registry so onclick can access by key
+  _gymRegistry = gymMap;
+
+  const sorted = Object.keys(gymMap).sort((a,b) => gymMap[b].fighters.length - gymMap[a].fighters.length);
+  const total  = data.mma.length + data.mt.length + data.grapple.length;
+
+  mc.innerHTML = `
+    <div style="margin-bottom:16px;">
+      <div class="section-title">⚔️ GYM DIRECTORY</div>
+      <div style="font-size:12px;color:var(--muted)">${sorted.length} gyms · ${total} fighters</div>
+    </div>
+    <div style="display:grid;gap:10px;">
+      ${sorted.map(gymName => {
+        const g = gymMap[gymName];
+        const key = gymName.replace(/'/g,"\\'");
+        const sportTags = [...g.sports].map(s => {
+          const cls = s==='MMA'?'badge-mma':s==='MT'?'badge-mt':'badge-grapple';
+          return `<span class="result-sport-badge ${cls}" style="font-size:10px">${s}</span>`;
+        }).join('');
+        const flagged = g.fighters.filter(f=>f.flag).length;
+
+        return `<div class="bout-card" style="padding:14px;">
+
+          <!-- GYM HEADER — tap name/title to open panel -->
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">
+            <div onclick="openCoachPanel('${key}')" style="cursor:pointer;flex:1;">
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:var(--gold)">${escHtml(gymName)}</div>
+            </div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;align-items:flex-start">
+              ${sportTags}
+              <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${g.fighters.length}</span>
+              ${flagged ? `<span style="font-size:11px;color:var(--red)">⚑${flagged}</span>` : ''}
+            </div>
+          </div>
+
+          <!-- COACH + CONTACT INFO — always visible -->
+          <div style="margin-bottom:10px;">
+            ${g.contact ? `<div style="font-size:13px;color:var(--white);margin-bottom:6px;">👤 ${escHtml(g.contact)}</div>` : ''}
+            <div style="display:flex;gap:14px;flex-wrap:wrap;">
+              ${g.phone    ? `<a href="tel:${g.phone.replace(/\D/g,'')}" style="font-size:13px;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:4px;min-height:34px;">📞 ${escHtml(g.phone)}</a>` : ''}
+              ${g.instagram? `<a href="https://instagram.com/${g.instagram.replace('@','')}" target="_blank" style="font-size:13px;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:4px;min-height:34px;">📷 ${escHtml(g.instagram)}</a>` : ''}
+            </div>
+          </div>
+
+          <!-- FIGHTER CHIPS -->
+          ${g.fighters.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;padding-top:10px;border-top:1px solid var(--border);">
+            ${g.fighters.map(f => {
+              const bc = f.sport==='MMA'?'badge-mma':f.sport==='MT'?'badge-mt':'badge-grapple';
+              return `<div onclick="openFighterProfile(${safeJson(f)},'${f.sport.toLowerCase()}')" style="background:var(--border);border-radius:4px;padding:8px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;min-height:40px;">
+                <span class="result-sport-badge ${bc}" style="font-size:9px;padding:1px 5px">${escHtml(f.sport)}</span>
+                <span>${escHtml(f.name)}</span>
+                <span style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px">${escHtml(f.weight)}lbs</span>
+                ${f.flag ? '<span style="color:var(--red)">⚑</span>' : ''}
+              </div>`;
+            }).join('')}
+          </div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ── COACHES ───────────────────────────────────────────────────────
+function renderCoaches(mc) {
+  const coachMap = {};
+
+  // Build from _gymRegistry (has phone, ig, fighters)
+  Object.entries(_gymRegistry).forEach(([gymName, g]) => {
+    if (!g.contact) return;
+    const coaches = g.contact.split('/').map(c => c.trim()).filter(Boolean);
+    coaches.forEach(coachName => {
+      const key = coachName.toLowerCase();
+      if (!coachMap[key]) {
+        coachMap[key] = {
+          name:      coachName,
+          gym:       gymName,
+          gymKey:    gymName,
+          phone:     g.phone || '',
+          instagram: g.instagram || '',
+          sports:    [...g.sports].join(', '),
+          fighters:  g.fighters || []
+        };
+      }
+    });
+  });
+
+  // Fallback: add coaches from roster contact fields not already found
+  [...data.mma, ...data.mt, ...data.grapple].forEach(f => {
+    if (!f.contact) return;
+    const key = f.contact.toLowerCase();
+    if (!coachMap[key]) {
+      const gymData = _gymRegistry[f.gym] || {};
+      coachMap[key] = {
+        name:      f.contact,
+        gym:       f.gym || '',
+        gymKey:    f.gym || '',
+        phone:     gymData.phone || '',
+        instagram: gymData.instagram || '',
+        sports:    '',
+        fighters:  gymData.fighters || []
+      };
+    }
+  });
+
+  const sorted = Object.values(coachMap).sort((a,b) => a.name.localeCompare(b.name));
+
+  mc.innerHTML = `
+    <div style="margin-bottom:16px;">
+      <div class="section-title">🧑‍🏫 COACHES</div>
+      <div style="font-size:12px;color:var(--muted)">${sorted.length} coaches · A–Z</div>
+    </div>
+    <div style="display:grid;gap:8px;">
+      ${sorted.map(c => {
+        const phoneClean = c.phone ? c.phone.replace(/\D/g,'') : '';
+        const igHandle   = c.instagram ? c.instagram.replace('@','') : '';
+        const safeGym    = c.gymKey.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `<div class="bout-card" onclick="openCoachPanel('${safeGym}')" style="padding:14px;cursor:pointer;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:15px;font-weight:600;color:var(--white)">${escHtml(c.name)}</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px">${escHtml(c.gym)}${c.sports ? ' · ' + escHtml(c.sports) : ''}</div>
+              <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
+                ${c.phone    ? `<a href="tel:${phoneClean}" onclick="event.stopPropagation()" style="font-size:13px;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:4px;min-height:36px;">📞 ${escHtml(c.phone)}</a>` : ''}
+                ${c.instagram? `<a href="https://instagram.com/${igHandle}" target="_blank" onclick="event.stopPropagation()" style="font-size:13px;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:4px;min-height:36px;">📷 ${escHtml(c.instagram)}</a>` : ''}
+              </div>
+            </div>
+            <div style="color:var(--muted);font-size:20px;padding-top:4px;">›</div>
+          </div>
+        </div>`;
+      }).join('')}
+      ${!sorted.length ? '<div class="empty">No coach data — add coach names to your Gyms tab</div>' : ''}
+    </div>`;
+}
+let stickyNotes = JSON.parse(localStorage.getItem('champions_sticky') || '[]');
+
+function renderStickyNotes() {
+  if (!stickyNotes.length) return '<div style="color:#554400;font-size:13px;padding:4px 0">No notes yet</div>';
+  return stickyNotes.map((n, i) => `
+    <div class="sticky-note-item">
+      <button class="sticky-note-del" onclick="deleteStickyNote(${i})">✕</button>
+      <span>${escHtml(n)}</span>
+    </div>`).join('');
+}
+
+function addStickyNote() {
+  const inp = document.getElementById('sticky-input');
+  const val = inp?.value?.trim();
+  if (!val) return;
+  stickyNotes.unshift(val);
+  localStorage.setItem('champions_sticky', JSON.stringify(stickyNotes));
+  inp.value = '';
+  const list = document.getElementById('sticky-notes-list');
+  if (list) list.innerHTML = renderStickyNotes();
+}
+
+function deleteStickyNote(i) {
+  stickyNotes.splice(i, 1);
+  localStorage.setItem('champions_sticky', JSON.stringify(stickyNotes));
+  const list = document.getElementById('sticky-notes-list');
+  if (list) list.innerHTML = renderStickyNotes();
+}
+
+// ── COACH PROFILE ─────────────────────────────────────────────────
+let coachNotes = JSON.parse(localStorage.getItem('champions_coach_notes') || '{}');
+let currentGym = null;
+
+function openCoachPanel(gymName) {
+  // Strip accidental trailing quotes from template literals
+  gymName = (gymName||'').replace(/'+$/, '').trim();
+  const gymData = _gymRegistry[gymName];
+  if (!gymData) {
+    // Try partial match
+    const match = Object.keys(_gymRegistry).find(k => k.toLowerCase().includes(gymName.toLowerCase()) || gymName.toLowerCase().includes(k.toLowerCase()));
+    if (!match) return;
+    gymName = match;
+  }
+  const gd = _gymRegistry[gymName];
+  _currentGymData = gd;
+  currentGym = gymName;
+  const panel = document.getElementById('coach-panel');
+
+  document.getElementById('coach-name').textContent = gymName;
+  const sports = [...gd.sports].join(' · ');
+  document.getElementById('coach-sport-badge').innerHTML = `<span style="font-size:12px;color:var(--muted);letter-spacing:1px">${sports}</span>`;
+  document.getElementById('coach-meta').innerHTML = `<span class="meta-pill">${gd.fighters.length} fighters</span>`;
+
+  const phoneClean = gd.phone ? gd.phone.replace(/\D/g,'') : '';
+  const igHandle   = gd.instagram ? gd.instagram.replace('@','') : '';
+
+  // Merge sheet notes + local coach notes for this gym
+  const sheetNotes = data.notes.filter(n =>
+    (n.gym && n.gym.toLowerCase() === gymName.toLowerCase()) ||
+    (n.fighter && gd.fighters.some(f => f.name.toLowerCase() === n.fighter.toLowerCase()))
+  );
+  const localCoachNotesList = coachNotes[gymName] || [];
+  const allNotes = [...localCoachNotesList, ...sheetNotes].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+
+  document.getElementById('coach-body').innerHTML = `
+    <div class="profile-section">
+      <div class="profile-section-title">GYM INFO</div>
+      ${gd.contact    ? `<div class="profile-field"><span class="field-label">Coach</span><span class="field-val">${escHtml(gd.contact)}</span></div>` : ''}
+      ${gd.phone      ? `<div class="profile-field"><span class="field-label">Phone</span><a href="tel:${phoneClean}" class="field-val field-link">📞 ${escHtml(gd.phone)}</a></div>` : ''}
+      ${gd.instagram  ? `<div class="profile-field"><span class="field-label">Instagram</span><a href="https://instagram.com/${igHandle}" target="_blank" class="field-val field-link">📷 ${escHtml(gd.instagram)}</a></div>` : ''}
+      ${gd.sports.size? `<div class="profile-field"><span class="field-label">Sports</span><span class="field-val">${escHtml([...gd.sports].join(', '))}</span></div>` : ''}
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-title">COACHING (${gd.fighters.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+        ${gd.fighters.map(f => {
+          const bc = f.sport==='MMA'?'badge-mma':f.sport==='MT'?'badge-mt':'badge-grapple';
+          return `<div onclick="openFighterProfile(${safeJson(f)},'${f.sport.toLowerCase()}')" style="background:var(--border);border-radius:4px;padding:7px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;min-height:38px;">
+            <span class="result-sport-badge ${bc}" style="font-size:9px;padding:1px 5px">${f.sport}</span>
+            ${escHtml(f.name)}
+            <span style="color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace">${escHtml(f.weight)}lbs</span>
+            ${f.flag ? '<span style="color:var(--red)">⚑</span>' : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-title">NOTES (${allNotes.length})</div>
+      ${allNotes.length ? allNotes.map(n=>`
+        <div class="note-item">
+          <div class="note-meta">${escHtml(n.date||'')}${n.fighter ? ` · <span style="color:var(--gold);cursor:pointer" onclick="searchAndOpen('${(n.fighter||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">${escHtml(n.fighter)}</span>` : ''}</div>
+          <div class="note-text">${escHtml(n.note)}</div>
+        </div>`).join('') : '<div style="color:var(--muted);font-size:13px;padding:8px 0">No notes yet.</div>'}
+    </div>`;
+
+  document.getElementById('coach-note-textarea').value = '';
+  panel.classList.add('open');
+}
+
+function closeCoachPanel() {
+  document.getElementById('coach-panel').classList.remove('open');
+  currentGym = null;
+}
+
+function saveCoachNote() {
+  const text = document.getElementById('coach-note-textarea').value.trim();
+  if (!text || !currentGym) return;
+  if (!coachNotes[currentGym]) coachNotes[currentGym] = [];
+  const now = new Date();
+  const date = `${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`;
+  coachNotes[currentGym].unshift({ note: text, date });
+  localStorage.setItem('champions_coach_notes', JSON.stringify(coachNotes));
+  openCoachPanel(currentGym);
+  showToast('Note saved ✓');
+}
+
+let _currentGymData = null;
+const NMFC6_SEED = {
+  id: 'nmfc6',
+  name: 'NMFC6',
+  date: 'July 18, 2026',
+  venue: 'DNA Lounge · San Francisco',
+  sport: 'MMA',
+  seed: true,
+  bouts: [
+    { match:'Match 1',  weight:'135-140', gym1:'HAC',          fighter1:'Jorge Lara',        record1:'2-1',   gym2:'AKA',            fighter2:'Arsir Vargas',      record2:'2-0-1', rounds:'3x2', status:'Confirmed',         boutNotes:'Fight June 13th' },
+    { match:'Match 2',  weight:'168-170', gym1:'Silverback',   fighter1:'Luis Ventura',       record1:'0-0',   gym2:'Outlaw JJ',      fighter2:'Carlos Ortiz',      record2:'0-0',   rounds:'',    status:'Confirmed',         boutNotes:'⚑ NEEDS CAMO' },
+    { match:'Match 3',  weight:'127-128', gym1:'Live Oak',     fighter1:'Fernando Plascencia',record1:'0-4',   gym2:'El Nino',        fighter2:'Toby Fuentes',      record2:'1-4',   rounds:'3x3', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 4',  weight:'137',     gym1:'CSA',          fighter1:'Luke Pham',          record1:'0-1',   gym2:'8 Limbs',        fighter2:'Ivan Ramirez',      record2:'0-0',   rounds:'',    status:'Confirmed',         boutNotes:'' },
+    { match:'Match 5',  weight:'183',     gym1:'Outlaw JJ',    fighter1:'Yancarlo Reyes',     record1:'1-4',   gym2:'Team Black',     fighter2:'Willy Mack',        record2:'2-1',   rounds:'3x3', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 6',  weight:'170',     gym1:'AKA',          fighter1:'Ricky Nguyen',       record1:'0-0',   gym2:'Rice Bros',      fighter2:'Anthony Medina',    record2:'0-0',   rounds:'3x2', status:'Confirmed',         boutNotes:'⚑ NEEDS CAMO' },
+    { match:'Match 7',  weight:'150',     gym1:'El Nino',      fighter1:'Alex Aroche',        record1:'0-0',   gym2:'Uhuru',          fighter2:'Daniel Holloway',   record2:'0-1',   rounds:'3x2', status:'Confirmed',         boutNotes:'⚑ NEEDS CAMO' },
+    { match:'Match 8',  weight:'205',     gym1:'El Nino',      fighter1:'Scooby Wright',      record1:'1-0',   gym2:'Rice Bros',      fighter2:'Eddy Herrera',      record2:'1-0',   rounds:'3x2', status:'Confirmed',         boutNotes:'⚑ SUSPENSION — needs lifting' },
+    { match:'Match 9',  weight:'155',     gym1:'Escolta',      fighter1:'Caroline Fetuu',     record1:'0-0',   gym2:'10th Planet SD', fighter2:'Mandelyn Liew',     record2:'0-0',   rounds:'3x2', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 10', weight:'225',     gym1:'',             fighter1:'Hood Ken',           record1:'0-0',   gym2:'',               fighter2:'Konfidence',        record2:'0-0',   rounds:'3x2', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 11', weight:'170',     gym1:'Furia',        fighter1:'Kleber Rodiques',    record1:'0-0',   gym2:'Elevated',       fighter2:'Daniel Stonefield', record2:'0-0',   rounds:'3x2', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 12', weight:'205',     gym1:'Antdawgs',     fighter1:'Andrew Bailey',      record1:'0-0',   gym2:'Halo',           fighter2:'Bobby Liles',       record2:'0-1',   rounds:'3x2', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 13', weight:'135',     gym1:'Elite MT',     fighter1:'Javier Martinez',    record1:'2-1',   gym2:'Antdawgs',       fighter2:'Juan Padilla',      record2:'3-1',   rounds:'',    status:'Confirmed',         boutNotes:'' },
+    { match:'Match 14', weight:'170',     gym1:'Island City',  fighter1:'Eddie Garcia',       record1:'2-1',   gym2:'HAC',            fighter2:'Izayah Spencer',    record2:'3-4',   rounds:'3x3', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 15', weight:'170',     gym1:'Silverback',   fighter1:'Luis Ventura',       record1:'0-0',   gym2:'Outlaw JJ',      fighter2:'Carlos Ortiz',      record2:'0-0',   rounds:'3x2', status:'Confirmed',         boutNotes:'⚑ Duplicate of Match 2 — verify' },
+    { match:'Match 16', weight:'175',     gym1:'Team Santos',  fighter1:'Kevin Yamashita',    record1:'',      gym2:'Ralph Gracie SF',fighter2:'PJ McGrane',        record2:'',      rounds:'1x5', status:'Confirmed',         boutNotes:'Combat JJ' },
+    { match:'Match 17', weight:'155',     gym1:'',             fighter1:'Ezra Clark',         record1:'',      gym2:'Garth Taylor JJ',fighter2:'Anthony Wong',      record2:'',      rounds:'',    status:'',                  boutNotes:'Combat BJJ' },
+    { match:'Match 18', weight:'135',     gym1:'BAFA',         fighter1:'Thomas Doan',        record1:'0-1',   gym2:'El Nino',        fighter2:'Zaniel Gomez',      record2:'0-0',   rounds:'3x2', status:'Pending',           boutNotes:'' },
+    { match:'Match 19', weight:'155',     gym1:'Legends Elite',fighter1:'Angel Gomez',        record1:'0-1',   gym2:'Smash',          fighter2:'Phu Le',            record2:'2-0',   rounds:'3x2', status:'Confirmed/Pending', boutNotes:'' },
+    { match:'Match 20', weight:'125',     gym1:'',             fighter1:'(Fighter 1 TBD)',    record1:'',      gym2:'Reign',          fighter2:'Diogo Mayoral',     record2:'0-0',   rounds:'',    status:'Confirmed',         boutNotes:'' },
+    { match:'Match 21', weight:'145',     gym1:'Darkhorse',    fighter1:'Raul Ortiz',         record1:'7-1',   gym2:'Ralph Gracie',   fighter2:'Gunnar Summerset',  record2:'5-1',   rounds:'3x2', status:'Pending',           boutNotes:'Promotional Belt' },
+    { match:'Match 22', weight:'160',     gym1:'HAC',          fighter1:'Zach Chernoff',      record1:'3-2',   gym2:'',               fighter2:'Heyaw Meteke',      record2:'4-0',   rounds:'',    status:'',                  boutNotes:'' },
+    { match:'Match 22b',weight:'145',     gym1:'Darkhorse',    fighter1:'Bryan Perez',        record1:'2-1',   gym2:'Team Black',     fighter2:'Joseph Graydon',    record2:'1-1',   rounds:'',    status:'Confirmed/Pending', boutNotes:'' },
+    { match:'Match 23', weight:'185',     gym1:'AKA',          fighter1:'Grady Cloyd',        record1:'3-0',   gym2:'',               fighter2:'(Opponent TBD)',    record2:'',      rounds:'3x2', status:'Confirmed',         boutNotes:'' },
+    { match:'Match 24', weight:'135',     gym1:'Resurrection', fighter1:'James Maltby',       record1:'1-4',   gym2:'',               fighter2:'(Opponent TBD)',    record2:'',      rounds:'',    status:'Confirmed',         boutNotes:'' },
+  ]
+};
+
+// Merge seed with any locally saved events (seed always first)
+const _savedEvents = JSON.parse(localStorage.getItem('nmfc_events') || '[]').filter(e => e.id !== 'nmfc6');
+let cardEvents = [NMFC6_SEED, ..._savedEvents];
+
+function renderCardBuilder(mc) {
+  mc.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div class="section-title">📋 FIGHT CARD BUILDER</div>
+      <button class="add-btn" onclick="openNewEventModal()">+ NEW EVENT</button>
+    </div>
+
+    ${cardEvents.length === 0 ? `<div class="empty" style="padding:60px 20px">
+      <div style="font-size:32px;margin-bottom:12px">📋</div>
+      <div style="font-size:16px;margin-bottom:8px;color:var(--white)">No events yet</div>
+      <div style="font-size:13px">Create your first event to start building a fight card</div>
+    </div>` : cardEvents.map((ev, ei) => `
+      <div class="bout-card" style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--gold)">${escHtml(ev.name)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${escHtml(ev.date||'Date TBD')} · ${escHtml(ev.venue||'Venue TBD')} · ${escHtml(ev.type||'')}</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="filter-btn" style="color:var(--gold);border-color:rgba(201,168,76,0.4)" onclick="openMatchupFinder(${ei})">🔍 Find Matchup</button>
+            <button class="filter-btn" onclick="openAddBoutModal(${ei})">+ Bout</button>
+            ${!ev.seed ? `<button class="filter-btn" style="color:var(--red);border-color:rgba(204,51,51,0.3)" onclick="confirmDeleteEvent(${ei})">Delete</button>` : ''}
+          </div>
+        </div>
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">${ev.bouts.length} BOUTS</div>
+        ${ev.bouts.length === 0 ? `<div style="color:var(--muted);font-size:13px;padding:10px 0;border-top:1px solid var(--border)">No bouts added yet — tap + Bout to begin matchmaking</div>` :
+          ev.bouts.map((b, bi) => {
+            const hasFlag = checkGymConflict(b.gym1, b.gym2);
+            return `<div style="border-top:1px solid var(--border);padding:12px 0;display:grid;grid-template-columns:1fr auto 1fr auto;gap:10px;align-items:center;">
+              <div>
+                <div style="font-size:14px;font-weight:500;cursor:pointer;color:var(--white)" onclick="searchAndOpen('${escHtml(b.fighter1||'')}')">${escHtml(b.fighter1||'TBD')}</div>
+                <div style="font-size:11px;color:var(--muted)">${escHtml(b.gym1)} · ${escHtml(b.record1)}</div>
+              </div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--gold-dim);text-align:center">
+                VS<br><span style="font-size:10px;color:var(--muted);font-family:'DM Sans',sans-serif">${escHtml(b.weight)}lbs · ${escHtml(b.rounds)}</span>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:14px;font-weight:500;cursor:pointer;color:var(--white)" onclick="searchAndOpen('${escHtml(b.fighter2||'')}')">${escHtml(b.fighter2||'TBD')}</div>
+                <div style="font-size:11px;color:var(--muted)">${escHtml(b.gym2)} · ${escHtml(b.record2)}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+                ${hasFlag ? '<span style="font-size:11px;color:var(--red)" title="Same gym conflict">⚑</span>' : '<span style="font-size:11px;color:var(--green)">✓</span>'}
+                <button onclick="openEditBoutModal(${ei},${bi})" style="background:none;border:1px solid var(--border);border-radius:3px;color:var(--muted);cursor:pointer;font-size:11px;padding:3px 7px;min-height:28px;" title="Edit bout">EDIT</button>
+              </div>
+            </div>`;
+          }).join('')}
+        ${ev.bouts.some(b => checkGymConflict(b.gym1, b.gym2)) ? `<div style="background:var(--red-bg);border:1px solid rgba(204,51,51,0.3);border-radius:4px;padding:8px 12px;margin-top:8px;font-size:12px;color:var(--red)">⚑ Same-gym conflict detected on one or more bouts</div>` : ''}
+      </div>`).join('')}
+
+    <!-- NEW EVENT MODAL -->
+    <div class="modal-overlay" id="event-modal">
+      <div class="modal">
+        <div class="modal-title">NEW EVENT</div>
+        <div class="form-row"><label class="form-label">Event Name</label><input class="form-input" id="ev-name" placeholder="e.g. NMFC7"></div>
+        <div class="form-row-grid">
+          <div class="form-row"><label class="form-label">Date</label><input class="form-input" id="ev-date" placeholder="MM/DD/YYYY" type="date"></div>
+          <div class="form-row"><label class="form-label">Sport</label>
+            <select class="form-select" id="ev-type">
+              <option value="MMA">MMA</option>
+              <option value="Muay Thai">Muay Thai</option>
+              <option value="Mixed Card">Mixed Card</option>
+              <option value="Grappling">Grappling</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row"><label class="form-label">Venue</label><input class="form-input" id="ev-venue" placeholder="Venue name"></div>
+        <div class="modal-actions">
+          <button class="modal-cancel" onclick="closeEventModal()">Cancel</button>
+          <button class="modal-save" onclick="saveEvent()">CREATE EVENT</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADD BOUT MODAL -->
+    <div class="modal-overlay" id="bout-modal">
+      <div class="modal">
+        <div class="modal-title">ADD BOUT</div>
+        <input type="hidden" id="bout-event-idx">
+        <div class="form-row-grid">
+          <div class="form-row"><label class="form-label">Weight Class</label><input class="form-input" id="b-weight" placeholder="e.g. 155"></div>
+          <div class="form-row"><label class="form-label">Rounds</label><input class="form-input" id="b-rounds" placeholder="e.g. 3x3"></div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px;margin-bottom:14px;">
+          <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px">FIGHTER 1</div>
+          <div class="form-row"><label class="form-label">Name</label><input class="form-input" id="b-f1" placeholder="Fighter name" oninput="autocompleteF1(this.value)"><div id="b-f1-ac" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:4px;margin-top:2px;max-height:150px;overflow-y:auto;"></div></div>
+          <div class="form-row-grid">
+            <div class="form-row"><label class="form-label">Gym</label><input class="form-input" id="b-gym1" placeholder="Gym"></div>
+            <div class="form-row"><label class="form-label">Record</label><input class="form-input" id="b-rec1" placeholder="e.g. 2-1"></div>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px;">
+          <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px">FIGHTER 2</div>
+          <div class="form-row"><label class="form-label">Name</label><input class="form-input" id="b-f2" placeholder="Fighter name" oninput="autocompleteF2(this.value)"><div id="b-f2-ac" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:4px;margin-top:2px;max-height:150px;overflow-y:auto;"></div></div>
+          <div class="form-row-grid">
+            <div class="form-row"><label class="form-label">Gym</label><input class="form-input" id="b-gym2" placeholder="Gym"></div>
+            <div class="form-row"><label class="form-label">Record</label><input class="form-input" id="b-rec2" placeholder="e.g. 1-0"></div>
+          </div>
+        </div>
+        <div id="gym-conflict-warn" style="display:none;background:var(--red-bg);border:1px solid rgba(204,51,51,0.3);border-radius:4px;padding:8px 12px;font-size:12px;color:var(--red);margin-bottom:12px">⚑ Same-gym conflict — these fighters are from the same gym</div>
+        <div class="modal-actions">
+          <button class="modal-cancel" onclick="closeBoutModal()">Cancel</button>
+          <button class="modal-save" onclick="saveBout()">ADD BOUT</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Attach modal listeners
+  document.getElementById('b-gym1').addEventListener('input', checkConflictLive);
+  document.getElementById('b-gym2').addEventListener('input', checkConflictLive);
+}
+
+function checkGymConflict(g1, g2) {
+  return g1 && g2 && g1.trim().toLowerCase() === g2.trim().toLowerCase();
+}
+
+function checkConflictLive() {
+  const g1 = document.getElementById('b-gym1')?.value || '';
+  const g2 = document.getElementById('b-gym2')?.value || '';
+  const warn = document.getElementById('gym-conflict-warn');
+  if (warn) warn.style.display = checkGymConflict(g1, g2) ? 'block' : 'none';
+}
+
+// ── EDIT BOUT ─────────────────────────────────────────────────────
+let editBoutEventIdx = null;
+let editBoutIdx = null;
+
+function openEditBoutModal(ei, bi) {
+  editBoutEventIdx = ei;
+  editBoutIdx = bi;
+  const b = cardEvents[ei].bouts[bi];
+
+  // Build modal if not exists
+  let modal = document.getElementById('edit-bout-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'edit-bout-modal';
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal">
+        <div class="modal-title">EDIT BOUT</div>
+        <div class="form-row-grid">
+          <div class="form-row"><label class="form-label">Weight Class</label><input class="form-input" id="eb-weight" placeholder="e.g. 155"></div>
+          <div class="form-row"><label class="form-label">Rounds</label><input class="form-input" id="eb-rounds" placeholder="e.g. 3x3"></div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px;margin-bottom:14px;">
+          <div style="font-size:11px;letter-spacing:2px;color:var(--gold);margin-bottom:10px">FIGHTER 1</div>
+          <div class="form-row"><label class="form-label">Name</label><input class="form-input" id="eb-f1" placeholder="Fighter name"></div>
+          <div class="form-row-grid">
+            <div class="form-row"><label class="form-label">Gym</label><input class="form-input" id="eb-gym1" placeholder="Gym"></div>
+            <div class="form-row"><label class="form-label">Record</label><input class="form-input" id="eb-rec1" placeholder="e.g. 2-1"></div>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px;">
+          <div style="font-size:11px;letter-spacing:2px;color:var(--gold);margin-bottom:10px">FIGHTER 2</div>
+          <div class="form-row"><label class="form-label">Name</label><input class="form-input" id="eb-f2" placeholder="Fighter name"></div>
+          <div class="form-row-grid">
+            <div class="form-row"><label class="form-label">Gym</label><input class="form-input" id="eb-gym2" placeholder="Gym"></div>
+            <div class="form-row"><label class="form-label">Record</label><input class="form-input" id="eb-rec2" placeholder="e.g. 1-0"></div>
+          </div>
+        </div>
+        <div class="form-row"><label class="form-label">Status</label>
+          <select class="form-select" id="eb-status">
+            <option value="Confirmed">Confirmed</option>
+            <option value="Pending">Pending</option>
+            <option value="Confirmed/Pending">Confirmed/Pending</option>
+          </select>
+        </div>
+        <div class="form-row"><label class="form-label">Bout Notes</label><input class="form-input" id="eb-notes" placeholder="Optional notes"></div>
+        <div class="modal-actions" style="justify-content:space-between;">
+          <button class="modal-cancel" style="color:var(--red);border-color:rgba(204,51,51,0.3)" onclick="confirmDeleteBout()">Remove Bout</button>
+          <div style="display:flex;gap:8px;">
+            <button class="modal-cancel" onclick="closeEditBoutModal()">Cancel</button>
+            <button class="modal-save" onclick="saveEditBout()">SAVE CHANGES</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  // Populate fields
+  document.getElementById('eb-weight').value = b.weight || '';
+  document.getElementById('eb-rounds').value = b.rounds || '';
+  document.getElementById('eb-f1').value = b.fighter1 || '';
+  document.getElementById('eb-gym1').value = b.gym1 || '';
+  document.getElementById('eb-rec1').value = b.record1 || '';
+  document.getElementById('eb-f2').value = b.fighter2 || '';
+  document.getElementById('eb-gym2').value = b.gym2 || '';
+  document.getElementById('eb-rec2').value = b.record2 || '';
+  document.getElementById('eb-status').value = b.status || 'Pending';
+  document.getElementById('eb-notes').value = b.boutNotes || '';
+
+  modal.style.display = 'flex';
+}
+
+function closeEditBoutModal() {
+  const m = document.getElementById('edit-bout-modal');
+  if (m) m.style.display = 'none';
+}
+
+function saveEditBout() {
+  const ei = editBoutEventIdx;
+  const bi = editBoutIdx;
+  const b = cardEvents[ei].bouts[bi];
+  b.weight    = document.getElementById('eb-weight').value;
+  b.rounds    = document.getElementById('eb-rounds').value;
+  b.fighter1  = document.getElementById('eb-f1').value;
+  b.gym1      = document.getElementById('eb-gym1').value;
+  b.record1   = document.getElementById('eb-rec1').value;
+  b.fighter2  = document.getElementById('eb-f2').value;
+  b.gym2      = document.getElementById('eb-gym2').value;
+  b.record2   = document.getElementById('eb-rec2').value;
+  b.status    = document.getElementById('eb-status').value;
+  b.boutNotes = document.getElementById('eb-notes').value;
+  localStorage.setItem('nmfc_events', JSON.stringify(cardEvents.filter(e => !e.seed)));
+  closeEditBoutModal();
+  showToast('Bout updated ✓');
+  renderCardBuilder(document.getElementById('main-content'));
+}
+
+function confirmDeleteBout() {
+  closeEditBoutModal();
+  const toast = document.getElementById('toast');
+  const b = cardEvents[editBoutEventIdx].bouts[editBoutIdx];
+  toast.innerHTML = `Remove <strong>${escHtml(b.fighter1||'TBD')} vs ${escHtml(b.fighter2||'TBD')}</strong>? <button onclick="removeBout(${editBoutEventIdx},${editBoutIdx})" style="margin-left:10px;background:var(--red);color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px;">Yes, remove</button>`;
+  toast.className = 'toast error show';
+  setTimeout(() => { toast.className = 'toast'; toast.innerHTML = ''; }, 5000);
+}
+
+// ── MATCHUP TOOL (full page) ──────────────────────────────────────
+function renderMatchupTool(mc) {
+  mc.innerHTML = `
+    <div style="margin-bottom:20px;">
+      <div class="section-title" style="font-size:22px;">🔍 BOUT CREATOR</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px">Search the database to find compatible opponents and create bouts</div>
+    </div>
+
+    <!-- SPORT SELECT -->
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+      <button id="mt-sport-mma" class="filter-btn active" onclick="mtSetSport('mma')" style="font-size:14px;padding:10px 20px;min-height:44px;">MMA</button>
+      <button id="mt-sport-mt"  class="filter-btn"        onclick="mtSetSport('mt')"  style="font-size:14px;padding:10px 20px;min-height:44px;">Muay Thai</button>
+      <button id="mt-sport-grapple" class="filter-btn"    onclick="mtSetSport('grapple')" style="font-size:14px;padding:10px 20px;min-height:44px;">Grappling</button>
+    </div>
+
+    <!-- FIGHTER SEARCH -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:11px;letter-spacing:2px;color:var(--gold);margin-bottom:10px;">STEP 1 — PICK A FIGHTER</div>
+      <input class="form-input" id="mt-fighter-input" placeholder="Type fighter name..." oninput="mtSearchFighter(this.value)" autocomplete="off" style="font-size:16px;padding:12px;">
+      <div id="mt-fighter-dd" style="background:var(--dark);border:1px solid var(--border);border-radius:4px;margin-top:4px;display:none;max-height:220px;overflow-y:auto;"></div>
+      <div id="mt-selected-card" style="display:none;margin-top:12px;background:var(--border);border-radius:6px;padding:12px;">
+        <div style="font-size:11px;color:var(--gold);letter-spacing:2px;margin-bottom:6px;">SELECTED</div>
+        <div id="mt-sel-name" style="font-size:17px;font-weight:700;color:var(--white)"></div>
+        <div id="mt-sel-detail" style="font-size:12px;color:var(--muted);margin-top:3px;"></div>
+      </div>
+    </div>
+
+    <!-- WEIGHT TOLERANCE -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:11px;letter-spacing:2px;color:var(--gold);margin-bottom:10px;">STEP 2 — WEIGHT TOLERANCE</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${[3,5,10,15].map(t => `<button id="mt-tol-${t}" class="filter-btn${t===5?' active':''}" onclick="mtSetTol(${t})" style="min-height:40px;padding:8px 16px;">±${t} lbs</button>`).join('')}
+      </div>
+    </div>
+
+    <!-- FIND BUTTON -->
+    <button onclick="mtRunSearch()" style="width:100%;background:var(--gold);color:#000;border:none;border-radius:6px;padding:16px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;margin-bottom:20px;min-height:54px;">FIND MATCHUPS</button>
+
+    <!-- RESULTS -->
+    <div id="mt-results"></div>`;
+
+  window._mtSport = 'mma';
+  window._mtTol   = 5;
+  window._mtFighter = null;
+}
+
+function mtSetSport(sport) {
+  window._mtSport = sport;
+  window._mtFighter = null;
+  ['mma','mt','grapple'].forEach(s => {
+    const b = document.getElementById(`mt-sport-${s}`);
+    if (b) b.classList.toggle('active', s === sport);
+  });
+  const inp = document.getElementById('mt-fighter-input');
+  if (inp) inp.value = '';
+  const dd = document.getElementById('mt-fighter-dd');
+  if (dd) dd.style.display = 'none';
+  const sel = document.getElementById('mt-selected-card');
+  if (sel) sel.style.display = 'none';
+  const res = document.getElementById('mt-results');
+  if (res) res.innerHTML = '';
+}
+
+function mtSetTol(t) {
+  window._mtTol = t;
+  [3,5,10,15].forEach(v => {
+    const b = document.getElementById(`mt-tol-${v}`);
+    if (b) b.classList.toggle('active', v === t);
+  });
+}
+
+function mtSearchFighter(q) {
+  const dd = document.getElementById('mt-fighter-dd');
+  if (!q || q.length < 2) { dd.style.display = 'none'; return; }
+  const sport = window._mtSport || 'mma';
+  const roster = sport === 'mma' ? data.mma : sport === 'mt' ? data.mt : data.grapple;
+  const matches = roster.filter(f => f.name.toLowerCase().includes(q.toLowerCase())).slice(0, 10);
+  if (!matches.length) { dd.style.display = 'none'; return; }
+  dd.style.display = 'block';
+  dd.innerHTML = matches.map(f => `
+    <div onclick="mtSelectFighter(${safeJson(f)})" style="padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;min-height:48px;" onmouseover="this.style.background='#1a1a1a'" onmouseout="this.style.background='transparent'">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:600;color:var(--white)">${escHtml(f.name)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${escHtml(f.gym)} · <span style="font-family:'JetBrains Mono',monospace">${escHtml(String(f.weight))}lbs · ${escHtml(f.record)}</span></div>
+      </div>
+      ${f.flag ? '<span style="color:var(--red)">⚑</span>' : ''}
+    </div>`).join('');
+}
+
+function mtSelectFighter(f) {
+  window._mtFighter = f;
+  const inp = document.getElementById('mt-fighter-input');
+  if (inp) inp.value = f.name;
+  const dd = document.getElementById('mt-fighter-dd');
+  if (dd) dd.style.display = 'none';
+  const sel = document.getElementById('mt-selected-card');
+  if (sel) sel.style.display = 'block';
+  const nm = document.getElementById('mt-sel-name');
+  if (nm) nm.textContent = f.name;
+  const dt = document.getElementById('mt-sel-detail');
+  if (dt) dt.textContent = `${f.weight}lbs · ${f.record} · ${f.gym}${f.gender ? ' · ' + (f.gender==='M'?'Male':'Female') : ''}`;
+  document.getElementById('mt-results').innerHTML = '';
+}
+
+function mtRunSearch() {
+  const f = window._mtFighter;
+  if (!f) { showToast('Pick a fighter first'); return; }
+  const tol    = window._mtTol || 5;
+  const weight = parseFloat(String(f.weight));
+  const sport  = window._mtSport || 'mma';
+  const roster = sport === 'mma' ? data.mma : sport === 'mt' ? data.mt : data.grapple;
+
+  const candidates = roster.filter(opp => {
+    if (opp.name === f.name) return false;
+    if (opp.gym && f.gym && opp.gym.toLowerCase() === f.gym.toLowerCase()) return false;
+    const oppW = parseFloat(String(opp.weight));
+    if (!isNaN(oppW) && !isNaN(weight) && Math.abs(oppW - weight) > tol) return false;
+    return true;
+  });
+
+  const scored = candidates.map(opp => {
+    const oppW = parseFloat(String(opp.weight)) || weight;
+    const wDiff = Math.abs(oppW - weight);
+    return { ...opp, _wdiff: wDiff, _score: (opp.gender !== f.gender ? 100 : 0) + wDiff };
+  }).sort((a,b) => a._score - b._score);
+
+  const res = document.getElementById('mt-results');
+  if (!scored.length) {
+    res.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:24px;text-align:center;color:var(--muted);">No compatible opponents found within ±${tol}lbs from a different gym.<br><br>Try increasing the weight tolerance.</div>`;
+    return;
+  }
+
+  res.innerHTML = `
+    <div style="font-size:11px;letter-spacing:2px;color:var(--gold);margin-bottom:12px;">${scored.length} POSSIBLE OPPONENTS FOR ${escHtml(f.name.toUpperCase())}</div>
+    <div style="display:grid;gap:10px;">
+      ${scored.slice(0,20).map(opp => {
+        const wColor = opp._wdiff === 0 ? 'var(--green)' : opp._wdiff <= 5 ? 'var(--amber)' : 'var(--muted)';
+        const bc = sport==='mma'?'badge-mma':sport==='mt'?'badge-mt':'badge-grapple';
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;align-items:center;gap:12px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:15px;font-weight:700;color:var(--white);cursor:pointer" onclick="searchAndOpen('${opp.name.replace(/'/g,"\\'")}')"> ${escHtml(opp.name)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:3px">${escHtml(opp.gym)}</div>
+            <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;align-items:center;">
+              <span class="result-sport-badge ${bc}" style="font-size:10px">${sport.toUpperCase()}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--white)">${escHtml(String(opp.weight))}lbs · ${escHtml(opp.record)}</span>
+              <span style="font-size:11px;color:${wColor}">Δ${opp._wdiff}lbs</span>
+              ${opp.gender !== f.gender ? `<span style="font-size:11px;color:var(--amber)">⚠ gender diff</span>` : ''}
+              ${opp.flag ? `<span style="font-size:11px;color:var(--red)">⚑ flagged</span>` : ''}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+            <button onclick="mtCreateBout(${safeJson(f)},${safeJson(opp)})" style="background:var(--gold);color:#000;border:none;border-radius:6px;padding:10px 16px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;min-height:44px;white-space:nowrap;">+ CREATE BOUT</button>
+            <button onclick="openFighterProfile(${safeJson(opp)},'${sport}')" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 10px;font-size:11px;cursor:pointer;min-height:32px;">VIEW PROFILE</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function mtCreateBout(f1, f2) {
+  // Go to cards tab and add bout to NMFC6 (first event)
+  const ei = 0;
+  const bout = {
+    match:    `Match ${cardEvents[ei].bouts.length + 1}`,
+    weight:   f1.weight || '',
+    rounds:   '',
+    fighter1: f1.name, gym1: f1.gym, record1: f1.record,
+    fighter2: f2.name, gym2: f2.gym, record2: f2.record,
+    status:   'Pending', boutNotes: ''
+  };
+  cardEvents[ei].bouts.push(bout);
+  localStorage.setItem('nmfc_events', JSON.stringify(cardEvents.filter(e=>!e.seed)));
+  showToast(`${f1.name} vs ${f2.name} added to ${cardEvents[ei].name} ✓`);
+  // Navigate to cards to confirm
+  showView('cards');
+}
+let matchupEventIdx = null;
+
+function openMatchupFinder(ei) {
+  matchupEventIdx = ei;
+  let modal = document.getElementById('matchup-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'matchup-modal';
+    modal.className = 'modal-overlay';
+    modal.style.display = 'none';
+    modal.innerHTML = `
+      <div class="modal" style="max-height:85vh;overflow-y:auto;width:min(94vw,520px)">
+        <div class="modal-title">🔍 FIND A MATCHUP</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Pick a fighter — the app suggests compatible opponents from the full database</div>
+        <div class="form-row">
+          <label class="form-label">Sport</label>
+          <select class="form-select" id="mf-sport" onchange="mfUpdateSport()">
+            <option value="mma">MMA</option>
+            <option value="mt">Muay Thai</option>
+            <option value="grapple">Grappling</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Fighter</label>
+          <input class="form-input" id="mf-search" placeholder="Type fighter name..." oninput="mfSearchFighter(this.value)" autocomplete="off">
+          <div id="mf-suggestions" style="background:var(--card);border:1px solid var(--border);border-radius:4px;margin-top:4px;display:none;max-height:180px;overflow-y:auto;"></div>
+        </div>
+        <div id="mf-selected" style="display:none;background:var(--border);border-radius:6px;padding:12px;margin-bottom:14px;">
+          <div style="font-size:11px;color:var(--gold);letter-spacing:2px;margin-bottom:6px">SELECTED FIGHTER</div>
+          <div id="mf-selected-name" style="font-size:15px;font-weight:600"></div>
+          <div id="mf-selected-detail" style="font-size:12px;color:var(--muted);margin-top:2px"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-end;">
+          <div style="flex:1;min-width:120px;">
+            <label class="form-label">Weight tolerance</label>
+            <select class="form-select" id="mf-tolerance">
+              <option value="3">±3 lbs</option>
+              <option value="5" selected>±5 lbs</option>
+              <option value="10">±10 lbs</option>
+              <option value="15">±15 lbs</option>
+            </select>
+          </div>
+          <button class="modal-save" onclick="runMatchupSearch()" style="white-space:nowrap;height:40px;">FIND MATCHUPS</button>
+        </div>
+        <div id="mf-results"></div>
+        <div class="modal-actions">
+          <button class="modal-cancel" onclick="closeMatchupFinder()">Close</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  document.getElementById('mf-search').value = '';
+  document.getElementById('mf-suggestions').style.display = 'none';
+  document.getElementById('mf-selected').style.display = 'none';
+  document.getElementById('mf-results').innerHTML = '';
+  modal.style.display = 'flex';
+  window._mfFighter = null;
+}
+
+function closeMatchupFinder() {
+  const m = document.getElementById('matchup-modal');
+  if (m) m.style.display = 'none';
+}
+
+function mfUpdateSport() {
+  document.getElementById('mf-search').value = '';
+  document.getElementById('mf-suggestions').style.display = 'none';
+  document.getElementById('mf-selected').style.display = 'none';
+  document.getElementById('mf-results').innerHTML = '';
+  window._mfFighter = null;
+}
+
+function mfGetRoster() {
+  const sport = document.getElementById('mf-sport')?.value || 'mma';
+  return sport === 'mma' ? data.mma : sport === 'mt' ? data.mt : data.grapple;
+}
+
+function mfSearchFighter(q) {
+  const dd = document.getElementById('mf-suggestions');
+  if (!q || q.length < 2) { dd.style.display = 'none'; return; }
+  const roster = mfGetRoster();
+  const matches = roster.filter(f => f.name.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
+  if (!matches.length) { dd.style.display = 'none'; return; }
+  dd.style.display = 'block';
+  dd.innerHTML = matches.map(f => `
+    <div onclick="mfSelectFighter(${safeJson(f)})" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='#222'" onmouseout="this.style.background='transparent'">
+      <span style="font-weight:600">${escHtml(f.name)}</span>
+      <span style="color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace">${escHtml(String(f.weight))}lbs · ${escHtml(f.record)}</span>
+      <span style="color:var(--muted);font-size:11px">${escHtml(f.gym)}</span>
+    </div>`).join('');
+}
+
+function mfSelectFighter(f) {
+  window._mfFighter = f;
+  document.getElementById('mf-search').value = f.name;
+  document.getElementById('mf-suggestions').style.display = 'none';
+  document.getElementById('mf-selected').style.display = 'block';
+  document.getElementById('mf-selected-name').textContent = f.name;
+  document.getElementById('mf-selected-detail').textContent = `${f.weight}lbs · ${f.record} · ${f.gym}`;
+  document.getElementById('mf-results').innerHTML = '';
+}
+
+function runMatchupSearch() {
+  const f = window._mfFighter;
+  if (!f) { showToast('Select a fighter first'); return; }
+  const tol    = parseInt(document.getElementById('mf-tolerance').value);
+  const weight = parseFloat(String(f.weight));
+  const roster = mfGetRoster();
+  const alreadyBooked = new Set();
+  cardEvents[matchupEventIdx]?.bouts?.forEach(b => {
+    if (b.fighter1) alreadyBooked.add(b.fighter1.toLowerCase());
+    if (b.fighter2) alreadyBooked.add(b.fighter2.toLowerCase());
+  });
+
+  const candidates = roster.filter(opp => {
+    if (opp.name === f.name) return false;
+    if (opp.gym && f.gym && opp.gym.toLowerCase() === f.gym.toLowerCase()) return false;
+    if (alreadyBooked.has(opp.name.toLowerCase())) return false;
+    const oppW = parseFloat(String(opp.weight));
+    if (isNaN(oppW) || isNaN(weight)) return true;
+    return Math.abs(oppW - weight) <= tol;
+  });
+
+  const scored = candidates.map(opp => {
+    const oppW = parseFloat(String(opp.weight)) || weight;
+    const wDiff = Math.abs(oppW - weight);
+    const genderPenalty = opp.gender !== f.gender ? 100 : 0;
+    return { ...opp, _wdiff: wDiff, _score: genderPenalty + wDiff };
+  }).sort((a,b) => a._score - b._score);
+
+  const res = document.getElementById('mf-results');
+  if (!scored.length) {
+    res.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:16px 0;text-align:center">No compatible opponents found within ±${tol}lbs from a different gym.<br><br>Try increasing the weight tolerance.</div>`;
+    return;
+  }
+
+  res.innerHTML = `
+    <div style="font-size:11px;letter-spacing:2px;color:var(--gold);margin-bottom:10px">${scored.length} POSSIBLE MATCHUPS FOR ${escHtml(f.name.toUpperCase())}</div>
+    <div style="display:grid;gap:8px;">
+      ${scored.slice(0,15).map(opp => {
+        const wColor = opp._wdiff === 0 ? 'var(--green)' : opp._wdiff <= 5 ? 'var(--amber)' : 'var(--muted)';
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:600;color:var(--white)">${escHtml(opp.name)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${escHtml(opp.gym)}</div>
+            <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;">
+              <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--white)">${escHtml(String(opp.weight))}lbs · ${escHtml(opp.record)}</span>
+              <span style="font-size:11px;color:${wColor}">Δ${opp._wdiff}lbs</span>
+              ${opp.gender !== f.gender ? `<span style="font-size:11px;color:var(--amber)">⚠ gender diff</span>` : ''}
+            </div>
+          </div>
+          <button onclick="mfAddBout(${safeJson(f)},${safeJson(opp)})" style="background:var(--gold);color:#000;border:none;border-radius:4px;padding:8px 14px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;white-space:nowrap;min-height:40px;flex-shrink:0;">+ ADD</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function mfAddBout(f1, f2) {
+  const ei = matchupEventIdx;
+  const bout = {
+    match:    `Match ${cardEvents[ei].bouts.length + 1}`,
+    weight:   f1.weight || '',
+    rounds:   '',
+    fighter1: f1.name,
+    gym1:     f1.gym,
+    record1:  f1.record,
+    fighter2: f2.name,
+    gym2:     f2.gym,
+    record2:  f2.record,
+    status:   'Pending',
+    boutNotes:''
+  };
+  cardEvents[ei].bouts.push(bout);
+  localStorage.setItem('nmfc_events', JSON.stringify(cardEvents.filter(e=>!e.seed)));
+  closeMatchupFinder();
+  showToast(`${f1.name} vs ${f2.name} added ✓`);
+  renderCardBuilder(document.getElementById('main-content'));
+}
+
+function autocompleteF(val, inputId, acId, gymId, recId) {
+  const ac = document.getElementById(acId);
+  if (!val || val.length < 2) { ac.style.display = 'none'; return; }
+  const vl = val.toLowerCase();
+  const matches = [...data.mma, ...data.mt, ...data.grapple].filter(f => f.name.toLowerCase().includes(vl)).slice(0,6);
+  if (!matches.length) { ac.style.display = 'none'; return; }
+  ac.innerHTML = matches.map(f => `<div style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)" 
+    onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''"
+    onclick="fillFighter('${escHtml(f.name)}','${escHtml(f.gym)}','${escHtml(f.record)}','${inputId}','${gymId}','${recId}','${acId}')">
+    <span style="font-weight:500">${escHtml(f.name)}</span>
+    <span style="color:var(--muted);font-size:11px;margin-left:8px">${escHtml(f.gym)} · ${escHtml(f.weight)}lbs · ${escHtml(f.record)}</span>
+  </div>`).join('');
+  ac.style.display = 'block';
+}
+
+function autocompleteF1(val) { autocompleteF(val, 'b-f1', 'b-f1-ac', 'b-gym1', 'b-rec1'); }
+function autocompleteF2(val) { autocompleteF(val, 'b-f2', 'b-f2-ac', 'b-gym2', 'b-rec2'); }
+
+function fillFighter(name, gym, record, inputId, gymId, recId, acId) {
+  document.getElementById(inputId).value = name;
+  document.getElementById(gymId).value = gym;
+  document.getElementById(recId).value = record;
+  document.getElementById(acId).style.display = 'none';
+  checkConflictLive();
+}
+
+function openNewEventModal() {
+  document.getElementById('event-modal').classList.add('open');
+}
+function closeEventModal() {
+  document.getElementById('event-modal').classList.remove('open');
+}
+
+function saveEvent() {
+  const name = document.getElementById('ev-name').value.trim();
+  if (!name) { showToast('Event name required', true); return; }
+  cardEvents.push({
+    name,
+    date: document.getElementById('ev-date').value,
+    venue: document.getElementById('ev-venue').value,
+    type: document.getElementById('ev-type').value,
+    bouts: []
+  });
+  localStorage.setItem('nmfc_events', JSON.stringify(cardEvents));
+  closeEventModal();
+  showToast(`${name} created ✓`);
+  renderCardBuilder(document.getElementById('main-content'));
+}
+
+function deleteEvent(idx) {
+  if (!confirm(`Delete this event?`)) return;
+  cardEvents.splice(idx, 1);
+  localStorage.setItem('nmfc_events', JSON.stringify(cardEvents));
+  renderCardBuilder(document.getElementById('main-content'));
+}
+
+function openAddBoutModal(eventIdx) {
+  document.getElementById('bout-event-idx').value = eventIdx;
+  ['b-weight','b-rounds','b-f1','b-gym1','b-rec1','b-f2','b-gym2','b-rec2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('gym-conflict-warn').style.display = 'none';
+  document.getElementById('bout-modal').classList.add('open');
+}
+function closeBoutModal() {
+  document.getElementById('bout-modal').classList.remove('open');
+}
+
+function saveBout() {
+  const idx = parseInt(document.getElementById('bout-event-idx').value);
+  const f1 = document.getElementById('b-f1').value.trim();
+  const f2 = document.getElementById('b-f2').value.trim();
+  if (!f1 || !f2) { showToast('Both fighters required', true); return; }
+  const bout = {
+    weight:  document.getElementById('b-weight').value,
+    rounds:  document.getElementById('b-rounds').value,
+    fighter1: f1,
+    gym1:    document.getElementById('b-gym1').value,
+    record1: document.getElementById('b-rec1').value,
+    fighter2: f2,
+    gym2:    document.getElementById('b-gym2').value,
+    record2: document.getElementById('b-rec2').value,
+  };
+  cardEvents[idx].bouts.push(bout);
+  localStorage.setItem('nmfc_events', JSON.stringify(cardEvents));
+  closeBoutModal();
+  showToast('Bout added ✓');
+  renderCardBuilder(document.getElementById('main-content'));
+}
+
+function removeBout(eventIdx, boutIdx) {
+  cardEvents[eventIdx].bouts.splice(boutIdx, 1);
+  localStorage.setItem('nmfc_events', JSON.stringify(cardEvents));
+  renderCardBuilder(document.getElementById('main-content'));
+}
+
+function confirmDeleteEvent(idx) {
+  const ev = cardEvents[idx];
+  // Show toast with confirm button instead of instant delete
+  const toast = document.getElementById('toast');
+  toast.innerHTML = `Delete <strong>${escHtml(ev.name)}</strong>? <button onclick="deleteEvent(${idx})" style="margin-left:10px;background:var(--red);color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px;">Yes, delete</button>`;
+  toast.className = 'toast error show';
+  setTimeout(() => { toast.className = 'toast'; toast.innerHTML = ''; }, 5000);
+}
+
+// ── NOTES ────────────────────────────────────────────────────────
+function renderNotes(mc) {
+  const allNotes = [...data.notes];
+  mc.innerHTML = `
+    <div class="section-title">NOTES LOG</div>
+    <div class="notes-list">
+      ${allNotes.length ? allNotes.map(n=>`
+        <div class="log-note">
+          <div class="log-note-header">
+            <span class="log-note-who">${escHtml(n.by||'Team')}</span>
+            <span class="log-note-when">${escHtml(n.date)}</span>
+          </div>
+          <div class="log-note-fighter">${escHtml(n.fighter)} <span style="color:var(--muted);font-size:11px">${escHtml(n.sport)}</span></div>
+          <div class="log-note-text">${escHtml(n.note)}</div>
+          ${n.followup==='Yes'?'<div style="font-size:11px;color:var(--amber);margin-top:6px">⚑ Follow up needed</div>':''}
+        </div>`).join('') : '<div class="empty">No notes logged yet. Open a fighter profile to add notes.</div>'}
+    </div>`;
+}
+
+// ── CAMO ─────────────────────────────────────────────────────────
+function renderCamo(mc) {
+  mc.innerHTML = `
+    <div class="section-title">CAMO ELIGIBILITY STATUS</div>
+    <div class="camo-grid">
+      ${data.camo.map(f => {
+        const isFlag = f.status && f.status.includes('⚑');
+        return `<div class="camo-row ${isFlag?'flag':''}">
+          <div class="camo-fighter">
+            <div class="camo-fighter-name">${escHtml(f.name)}</div>
+            <div class="camo-fighter-detail">${escHtml(f.sport)} · ${escHtml(f.gym)}${f.checked?` · Checked: ${escHtml(f.checked)}`:''}</div>
+            ${f.notes?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${escHtml(f.notes)}</div>`:''}
+          </div>
+          <div class="camo-status-text ${isFlag?'camo-flag-text':'camo-clear-text'}">${escHtml(f.status||'Unknown')}</div>
+        </div>`;
+      }).join('')}
+      ${!data.camo.length ? '<div class="empty">No CAMO data loaded</div>' : ''}
+    </div>`;
+}
+
+// ── ISKA STATUS (MUAY THAI REGULATORY) ───────────────────────────
+function renderIska(mc) {
+  const flags = data.iska.filter(f => f.status && f.status.includes('⚑'));
+
+  mc.innerHTML = `
+    <div style="margin-bottom:20px;">
+      <div class="section-title" style="margin-bottom:4px;">🌎 ISKA STATUS</div>
+    </div>
+    <div class="camo-grid">
+      ${data.iska.map(f => {
+        const isFlag = f.status && f.status.includes('⚑');
+        return `<div class="camo-row ${isFlag?'flag':''}" onclick="searchAndOpen('${escHtml(f.name)}')" style="cursor:pointer">
+          <div style="flex:1">
+            <div class="camo-fighter-name">${escHtml(f.name)}</div>
+            <div class="camo-fighter-detail">MT · ${escHtml(f.gym)}${f.checked ? ` · Checked: ${escHtml(f.checked)}` : ''}</div>
+            ${f.camoId ? `<div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px">ISKA # ${escHtml(f.camoId)}</div>` : ''}
+            ${f.notes ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${escHtml(f.notes)}</div>` : ''}
+          </div>
+          <div class="camo-status-text ${isFlag ? 'camo-flag-text' : 'camo-clear-text'}">${escHtml(f.status || 'Unknown')}</div>
+        </div>`;
+      }).join('')}
+      ${!data.iska.length ? '<div class="empty">No ISKA data — make sure the ISKA Status tab exists in your Google Sheet</div>' : ''}
+    </div>`;
+}
+
+// ── FIGHTER PROFILE ──────────────────────────────────────────────
+function openFighterProfile(fighter, sport) {
+  currentFighter = { ...fighter, sport };
+  const panel = document.getElementById('profile-panel');
+
+  const sportLabel = sport === 'mma' ? 'MMA' : sport === 'mt' ? 'MUAY THAI' : 'GRAPPLING';
+  const badgeClass = sport === 'mma' ? 'badge-mma' : sport === 'mt' ? 'badge-mt' : 'badge-grapple';
+
+  document.getElementById('profile-sport-badge').innerHTML = `<span class="result-sport-badge ${badgeClass}">${sportLabel}</span>`;
+  document.getElementById('profile-name').textContent = fighter.name;
+
+  const meta = [];
+  if (fighter.weight) meta.push(`<span class="meta-pill">${fighter.weight} LBS</span>`);
+  if (fighter.record) meta.push(`<span class="meta-pill">${fighter.record}</span>`);
+  if (fighter.gender) meta.push(`<span class="meta-pill">${fighter.gender === 'M' ? 'MALE' : 'FEMALE'}</span>`);
+  if (fighter.age) meta.push(`<span class="meta-pill">AGE ${fighter.age}</span>`);
+  document.getElementById('profile-meta').innerHTML = meta.join('');
+
+  // Check CAMO
+  const camoEntry = data.camo.find(c => c.name.toLowerCase() === fighter.name.toLowerCase());
+  const iskaEntry = data.iska.find(c => c.name.toLowerCase() === fighter.name.toLowerCase());
+  const camoStatus = camoEntry ? camoEntry.status : 'Not on file';
+  const iskaStatus = iskaEntry ? iskaEntry.status : null;
+  const camoClass = camoEntry && camoEntry.status.includes('⚑') ? 'camo-warn' : camoEntry ? 'camo-ok' : 'camo-unknown';
+
+  // Fighter notes — include notes tied to this fighter OR their gym
+  const fighterNotes = data.notes.filter(n =>
+    (n.fighter && n.fighter.toLowerCase().includes(fighter.name.toLowerCase())) ||
+    (n.gym && fighter.gym && n.gym.toLowerCase() === fighter.gym.toLowerCase())
+  );
+
+  // Find bouts on NMFC6 card
+  const nm6Bouts = cardEvents[0]?.bouts?.filter(b =>
+    b.fighter1?.toLowerCase() === fighter.name.toLowerCase() ||
+    b.fighter2?.toLowerCase() === fighter.name.toLowerCase()
+  ) || [];
+
+  // Gym info from gyms tab
+  const gymInfo = data.gyms.find(g => g.name?.toLowerCase() === fighter.gym?.toLowerCase());
+
+  document.getElementById('profile-body').innerHTML = `
+    <div class="profile-section">
+      <div class="profile-section-title">FIGHTER INFO</div>
+      ${fighter.weight   ? `<div class="profile-field"><span class="field-label">Weight</span><span class="field-val">${escHtml(String(fighter.weight))} lbs</span></div>` : ''}
+      ${fighter.record   ? `<div class="profile-field"><span class="field-label">Record</span><span class="field-val" style="font-family:'JetBrains Mono',monospace">${escHtml(fighter.record)}</span></div>` : ''}
+      ${fighter.gender   ? `<div class="profile-field"><span class="field-label">Gender</span><span class="field-val">${fighter.gender === 'M' ? 'Male' : 'Female'}</span></div>` : ''}
+      ${fighter.age      ? `<div class="profile-field"><span class="field-label">Age</span><span class="field-val">${escHtml(String(fighter.age))}</span></div>` : ''}
+      ${fighter.dob      ? `<div class="profile-field"><span class="field-label">DOB</span><span class="field-val">${escHtml(fighter.dob)}</span></div>` : ''}
+      ${fighter.height   ? `<div class="profile-field"><span class="field-label">Height</span><span class="field-val">${escHtml(fighter.height)}</span></div>` : ''}
+      ${fighter.gym      ? `<div class="profile-field"><span class="field-label">Gym</span><span class="field-val" style="cursor:pointer;color:var(--gold)" onclick="openCoachPanel('${escHtml(fighter.gym).replace(/'/g,"\\'")}')">${escHtml(fighter.gym)}</span></div>` : ''}
+      ${fighter.contact  ? `<div class="profile-field"><span class="field-label">Coach</span><span class="field-val" style="cursor:pointer;color:var(--gold)" onclick="openCoachPanel('${escHtml(fighter.gym||'').replace(/'/g,"\\'")}')">${escHtml(fighter.contact)}</span></div>` : ''}
+      ${fighter.phone    ? `<div class="profile-field"><span class="field-label">Phone</span><a href="tel:${escHtml(fighter.phone.replace(/\D/g,''))}" class="field-val field-link">📞 ${escHtml(fighter.phone)}</a></div>` : ''}
+      ${fighter.instagram ? `<div class="profile-field"><span class="field-label">Instagram</span><a href="https://instagram.com/${escHtml(fighter.instagram.replace('@',''))}" target="_blank" class="field-val field-link">📷 ${escHtml(fighter.instagram)}</a></div>` : ''}
+      ${fighter.gymIg    ? `<div class="profile-field"><span class="field-label">Gym IG</span><a href="https://instagram.com/${escHtml(fighter.gymIg.replace('@',''))}" target="_blank" class="field-val field-link">📷 ${escHtml(fighter.gymIg)}</a></div>` : ''}
+      ${fighter.email    ? `<div class="profile-field"><span class="field-label">Email</span><a href="mailto:${escHtml(fighter.email)}" class="field-val field-link">✉️ ${escHtml(fighter.email)}</a></div>` : ''}
+      ${gymInfo?.phone   ? `<div class="profile-field"><span class="field-label">Gym Phone</span><a href="tel:${gymInfo.phone.replace(/\D/g,'')}" class="field-val field-link">📞 ${escHtml(gymInfo.phone)}</a></div>` : ''}
+      ${gymInfo?.instagram ? `<div class="profile-field"><span class="field-label">Gym IG</span><a href="https://instagram.com/${gymInfo.instagram.replace('@','')}" target="_blank" class="field-val field-link">📷 ${escHtml(gymInfo.instagram)}</a></div>` : ''}
+      ${fighter.notes    ? `<div class="profile-field"><span class="field-label">Notes</span><span class="field-val" style="font-size:12px;color:#aaa">${escHtml(fighter.notes)}</span></div>` : ''}
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-title">ELIGIBILITY</div>
+      <div class="profile-field"><span class="field-label">CAMO</span><span class="field-val ${camoClass}">${escHtml(camoStatus)}</span></div>
+      ${iskaStatus ? `<div class="profile-field"><span class="field-label">ISKA</span><span class="field-val ${iskaEntry?.status?.includes('⚑') ? 'camo-warn' : 'camo-ok'}">${escHtml(iskaStatus)}</span></div>` : ''}
+      ${camoEntry?.camoId ? `<div class="profile-field"><span class="field-label">CAMO ID</span><span class="field-val" style="font-family:'JetBrains Mono',monospace;font-size:12px">${escHtml(camoEntry.camoId)}</span></div>` : ''}
+      ${camoEntry?.checked ? `<div class="profile-field"><span class="field-label">Last Checked</span><span class="field-val">${escHtml(camoEntry.checked)}</span></div>` : ''}
+      ${fighter.flag ? `<div style="background:var(--red-bg);border:1px solid rgba(204,51,51,0.3);border-radius:4px;padding:10px 12px;margin-top:8px;font-size:12px;color:var(--red)">⚑ ${escHtml(fighter.flag)}</div>` : ''}
+    </div>
+
+    ${nm6Bouts.length ? `
+    <div class="profile-section">
+      <div class="profile-section-title">ON NMFC6 CARD</div>
+      ${nm6Bouts.map(b => `
+        <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:500">${escHtml(b.fighter1||'TBD')} vs ${escHtml(b.fighter2||'TBD')}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${escHtml(b.match||'')} · ${escHtml(b.weight||'')}lbs · ${escHtml(b.rounds||'')} · <span style="color:${b.status?.toLowerCase().includes('confirm')?'var(--green)':'var(--amber)'}">${escHtml(b.status||'Pending')}</span></div>
+          ${b.boutNotes ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${escHtml(b.boutNotes)}</div>` : ''}
+        </div>`).join('')}
+    </div>` : ''}
+
+    <div class="profile-section">
+      <div class="profile-section-title">NOTES HISTORY (${fighterNotes.length})</div>
+      ${fighterNotes.length ? fighterNotes.map(n=>`
+        <div class="note-item">
+          <div class="note-meta">${escHtml(n.by||'Team')} · ${escHtml(n.date)}${n.gym ? ` · <span style="color:var(--gold);cursor:pointer" onclick="openCoachPanel('${(n.gym||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">${escHtml(n.gym)}</span>` : ''}</div>
+          <div class="note-text">${escHtml(n.note)}</div>
+        </div>`).join('') : '<div style="color:var(--muted);font-size:13px;padding:8px 0">No notes yet. Add one below.</div>'}
+    </div>
+  `;
+
+  document.getElementById('note-textarea').value = '';
+  panel.classList.add('open');
+}
+
+function closeProfile() {
+  document.getElementById('profile-panel').classList.remove('open');
+  currentFighter = null;
+}
+
+// ── NOTES ────────────────────────────────────────────────────────
+function saveNote() {
+  const text = document.getElementById('note-textarea').value.trim();
+  if (!text) { showToast('Type or speak a note first', true); return; }
+  if (!currentFighter) { showToast('No fighter selected', true); return; }
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', {month:'2-digit',day:'2-digit',year:'numeric'}) + ' ' +
+    now.toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'});
+
+  const note = {
+    date:    dateStr,
+    by:      'Team',
+    fighter: currentFighter.name,
+    sport:   currentFighter.sport.toUpperCase(),
+    gym:     currentFighter.gym || '',
+    note:    text,
+    followup:'No'
+  };
+
+  // Save locally
+  localNotes.unshift(note);
+  localStorage.setItem('nmfc_notes', JSON.stringify(localNotes.slice(0,200)));
+  data.notes.unshift(note);
+
+  document.getElementById('note-textarea').value = '';
+  showToast('Note saved ✓');
+
+  // Refresh profile
+  openFighterProfile(currentFighter, currentFighter.sport);
+}
+
+// ── VOICE INPUT ──────────────────────────────────────────────────
+function toggleMic() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Voice not supported on this browser', true);
+    return;
+  }
+  if (isRecording) {
+    recognition && recognition.stop();
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onstart = () => {
+    isRecording = true;
+    document.getElementById('mic-btn').classList.add('recording');
+    document.getElementById('mic-btn').textContent = '⏹';
+  };
+
+  recognition.onresult = (e) => {
+    const transcript = Array.from(e.results).map(r=>r[0].transcript).join('');
+    document.getElementById('note-textarea').value = transcript;
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    document.getElementById('mic-btn').classList.remove('recording');
+    document.getElementById('mic-btn').textContent = '🎤';
+  };
+
+  recognition.onerror = () => {
+    isRecording = false;
+    document.getElementById('mic-btn').classList.remove('recording');
+    document.getElementById('mic-btn').textContent = '🎤';
+    showToast('Mic error — check browser permissions', true);
+  };
+
+  recognition.start();
+}
+
+// ── SEARCH ───────────────────────────────────────────────────────
+function handleSearch(q) {
+  const dd = document.getElementById('search-dropdown');
+  if (!q || q.length < 2) { dd.style.display = 'none'; return; }
+  const ql = q.toLowerCase();
+
+  const results = [];
+
+  // Search fighters
+  data.mma.forEach(f => { if(f.name.toLowerCase().includes(ql)||f.gym.toLowerCase().includes(ql)) results.push({...f,sport:'mma',type:'fighter'}); });
+  data.mt.forEach(f  => { if(f.name.toLowerCase().includes(ql)||f.gym.toLowerCase().includes(ql)) results.push({...f,sport:'mt',type:'fighter'}); });
+  data.grapple.forEach(f => { if(f.name.toLowerCase().includes(ql)) results.push({...f,sport:'grapple',type:'fighter'}); });
+
+  // Search gyms
+  data.gyms.forEach(g => {
+    if(g.name.toLowerCase().includes(ql)||g.contact.toLowerCase().includes(ql)) {
+      results.push({name:g.name, gym:g.contact, record:g.sports, weight:'', flag:'', sport:'gym', type:'gym'});
+    }
+  });
+
+  // Search coaches
+  data.gyms.forEach(g => {
+    if (g.contact && g.contact.toLowerCase().includes(ql)) {
+      results.push({ name: g.contact, gym: g.name, phone: g.phone||'', instagram: g.instagram||'', type: 'coach', gymKey: g.name });
+    }
+  });
+
+  if (!results.length) { dd.style.display = 'none'; return; }
+
+  const badgeMap = {mma:'badge-mma',mt:'badge-mt',grapple:'badge-grapple',gym:'badge-gym'};
+  const labelMap = {mma:'MMA',mt:'MT',grapple:'GRP',gym:'GYM'};
+
+  dd.innerHTML = results.slice(0,14).map(f => {
+    if (f.type === 'coach') {
+      const safeKey = (f.gymKey||'').replace(/'/g,"\\'");
+      return `<div class="search-result-item" onclick="document.getElementById('search-dropdown').style.display='none';document.getElementById('global-search').value='';openCoachPanel('${safeKey}')">
+        <span class="result-sport-badge" style="background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.3)">COACH</span>
+        <div class="result-info">
+          <div class="result-name">${escHtml(f.name)}</div>
+          <div class="result-detail">${escHtml(f.gym)}</div>
+        </div>
+      </div>`;
+    }
+    if (f.type === 'gym') {
+      const safeGym = (f.name||'').replace(/'/g,"\\'");
+      return `<div class="search-result-item" onclick="document.getElementById('search-dropdown').style.display='none';document.getElementById('global-search').value='';openCoachPanel('${safeGym}')">
+        <span class="result-sport-badge" style="background:rgba(100,100,100,0.2);color:#aaa;border:1px solid #444">GYM</span>
+        <div class="result-info">
+          <div class="result-name">${escHtml(f.name)}</div>
+          <div class="result-detail">${escHtml(f.gym)} · ${escHtml(f.record)}</div>
+        </div>
+      </div>`;
+    }
+    return `<div class="search-result-item" onclick="selectSearchResult(${safeJson(f)})">
+      <span class="result-sport-badge ${badgeMap[f.sport]}">${labelMap[f.sport]}</span>
+      <div class="result-info">
+        <div class="result-name">${escHtml(f.name)}</div>
+        <div class="result-detail">${escHtml(f.gym)} · ${escHtml(f.weight)} lbs · ${escHtml(f.record)}</div>
+      </div>
+      ${f.flag ? '<span class="result-flag">⚑</span>' : ''}
+    </div>`;
+  }).join('');
+
+  dd.style.display = 'block';
+}
+
+function selectSearchResult(fighter) {
+  document.getElementById('search-dropdown').style.display = 'none';
+  document.getElementById('global-search').value = '';
+  openFighterProfile(fighter, fighter.sport);
+}
+
+function showGymDetail(gym) {
+  document.getElementById('search-dropdown').style.display = 'none';
+  document.getElementById('global-search').value = '';
+  // Find all fighters from this gym
+  const gymFighters = [
+    ...data.mma.filter(f=>f.gym===gym.name).map(f=>({...f,sport:'MMA'})),
+    ...data.mt.filter(f=>f.gym===gym.name).map(f=>({...f,sport:'MT'})),
+    ...data.grapple.filter(f=>f.gym===gym.name).map(f=>({...f,sport:'GRP'}))
+  ];
+  currentFighter = {name: gym.name, sport:'gym', gym:gym.name};
+  const panel = document.getElementById('profile-panel');
+  document.getElementById('profile-sport-badge').innerHTML = '<span class="result-sport-badge" style="background:rgba(100,100,100,0.2);color:#aaa;border:1px solid #444">GYM</span>';
+  document.getElementById('profile-name').textContent = gym.name;
+  document.getElementById('profile-meta').innerHTML = `<span class="meta-pill">${escHtml(gym.sports||'')}</span>${gym.contact?`<span class="meta-pill">${escHtml(gym.contact)}</span>`:''}`;
+  document.getElementById('profile-body').innerHTML = `
+    <div class="profile-section">
+      <div class="profile-section-title">GYM INFO</div>
+      ${gym.contact?`<div class="profile-field"><span class="field-label">Coach / Contact</span><span class="field-val">${escHtml(gym.contact)}</span></div>`:''}
+      ${gym.sports?`<div class="profile-field"><span class="field-label">Sports</span><span class="field-val">${escHtml(gym.sports)}</span></div>`:''}
+      ${gym.notes?`<div class="profile-field"><span class="field-label">Notes</span><span class="field-val">${escHtml(gym.notes)}</span></div>`:''}
+    </div>
+    <div class="profile-section">
+      <div class="profile-section-title">FIGHTERS (${gymFighters.length})</div>
+      ${gymFighters.length ? gymFighters.map(f=>`
+        <div class="profile-field" style="cursor:pointer" onclick="openFighterProfile(${safeJson(f)}, '${f.sport.toLowerCase()}')">
+          <span class="field-label">${escHtml(f.name)} <span style="font-size:10px;color:var(--muted)">${escHtml(f.sport)}</span></span>
+          <span class="field-val" style="font-family:'JetBrains Mono',monospace;font-size:12px">${escHtml(f.record)} · ${escHtml(f.weight)}lbs</span>
+        </div>`).join('') : '<div style="color:var(--muted);font-size:13px;padding:8px 0">No fighters found for this gym</div>'}
+    </div>`;
+  document.getElementById('note-textarea').value = '';
+  panel.classList.add('open');
+}
+
+function searchAndOpen(name) {
+  const fighter = [...data.mma, ...data.mt, ...data.grapple].find(f => f.name === name);
+  if (fighter) openFighterProfile(fighter, fighter.sport || 'mma');
+}
+
+// Hide search on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.topbar-search')) {
+    document.getElementById('search-dropdown').style.display = 'none';
+  }
+});
+
+// ── ADD FIGHTER MODAL ────────────────────────────────────────────
+function openAddModal(sport) {
+  document.getElementById('f-sport').value = sport === 'mma' ? 'MMA' : sport === 'mt' ? 'MT' : 'Grappling';
+  ['f-name','f-weight','f-age','f-record','f-height','f-gym','f-contact','f-notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('add-modal').classList.remove('open');
+}
+
+function saveFighter() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { showToast('Fighter name is required', true); return; }
+
+  const sport = document.getElementById('f-sport').value;
+  const newFighter = {
+    weight:  document.getElementById('f-weight').value,
+    name,
+    gender:  document.getElementById('f-gender').value,
+    age:     document.getElementById('f-age').value,
+    record:  document.getElementById('f-record').value,
+    height:  document.getElementById('f-height').value,
+    gym:     document.getElementById('f-gym').value,
+    contact: document.getElementById('f-contact').value,
+    notes:   document.getElementById('f-notes').value,
+    flag:    ''
+  };
+
+  const key = sport === 'MMA' ? 'mma' : sport === 'MT' ? 'mt' : 'grapple';
+  data[key].unshift(newFighter);
+
+  // Save locally
+  const saved = JSON.parse(localStorage.getItem('nmfc_fighters') || '[]');
+  saved.push({...newFighter, sport: key, addedAt: new Date().toISOString()});
+  localStorage.setItem('nmfc_fighters', JSON.stringify(saved));
+
+  closeModal();
+  showToast(`${name} added ✓`);
+  showView(key);
+}
+
+// ── UTILS ────────────────────────────────────────────────────────
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function safeJson(obj) {
+  return JSON.stringify(obj).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function showToast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Load saved local fighters on startup
+function loadLocalFighters() {
+  const saved = JSON.parse(localStorage.getItem('nmfc_fighters') || '[]');
+  saved.forEach(f => {
+    const key = f.sport || 'mma';
+    if (data[key]) data[key].unshift(f);
+  });
+}
+</script>
+</body>
+</html>
