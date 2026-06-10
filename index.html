@@ -922,8 +922,6 @@ tbody td {
 </div>
 
 <!-- FIGHTER PROFILE PANEL -->
-<div id="profile-panel">
-
 <!-- COACH PROFILE PANEL -->
 <div id="coach-panel">
   <div class="profile-header">
@@ -941,6 +939,9 @@ tbody td {
     </div>
   </div>
 </div>
+
+<!-- FIGHTER PROFILE PANEL -->
+<div id="profile-panel">
   <div class="profile-header">
     <button class="profile-close" onclick="closeProfile()">✕</button>
     <div id="profile-sport-badge"></div>
@@ -1075,23 +1076,26 @@ async function fetchSheet(tabName) {
 
 function parseRoster(rows) {
   if (!rows.length) return [];
-  return rows.slice(2).filter(r => r && r[1] && r[1].trim()).map(r => ({
-    weight:   r[0]  || '',
-    name:     r[1]  || '',
-    gender:   r[2]  || '',
-    age:      r[3]  || '',
-    record:   r[4]  || '',
-    height:   r[5]  || '',
-    gym:      r[6]  || '',
-    contact:  r[7]  || '',
-    notes:    r[8]  || '',
-    flag:     r[9]  || '',
-    instagram:r[10] || '',
-    gymIg:    r[11] || '',
-    phone:    r[12] || '',
-    dob:      r[13] || '',
-    email:    r[14] || ''
-  }));
+  return rows.slice(2).filter(r => r && r[1] && r[1].trim()).map(r => {
+    while (r.length < 15) r.push('');
+    return {
+      weight:   r[0]  || '',
+      name:     r[1]  || '',
+      gender:   r[2]  || '',
+      age:      r[3]  || '',
+      record:   r[4]  || '',
+      height:   r[5]  || '',
+      gym:      r[6]  || '',
+      contact:  r[7]  || '',
+      notes:    r[8]  || '',
+      flag:     r[9]  || '',
+      instagram:r[10] || '',
+      gymIg:    r[11] || '',
+      phone:    r[12] || '',
+      dob:      r[13] || '',
+      email:    r[14] || ''
+    };
+  });
 }
 
 function parseGrapple(rows) {
@@ -1185,12 +1189,22 @@ async function loadAllData() {
   data.nm5card = parseBoutCard(nm5R);
   data.nm6card = parseBoutCard(nm6R);
   data.notes   = parseNotes(notesR);
-  data.gyms = gymsR.slice(2).filter(r=>r&&r[0]).map(r=>({name:r[0],contact:r[1]||'',sports:r[2]||'',notes:r[3]||'',phone:r[5]||'',instagram:r[6]||''}));
+  data.gyms = gymsR.slice(2).filter(r=>r&&r[0]).map(r => {
+    while (r.length < 7) r.push('');
+    return {name:r[0],contact:r[1]||'',sports:r[2]||'',notes:r[3]||'',phone:r[5]||'',instagram:r[6]||''};
+  });
   data.camo    = parseCamo(camoR);
   data.iska    = parseCamo(iskaR); // same structure: name, sport, gym, licenseId, status, checked, notes
 
   // Merge local notes
   data.notes = [...localNotes, ...data.notes];
+
+  // Debug: log first fighter with IG and first gym with phone
+  const sampleIg = data.mma.find(f=>f.instagram) || data.mt.find(f=>f.instagram);
+  const sampleGym = data.gyms.find(g=>g.phone);
+  console.log('[Champions AI] Sample fighter IG:', sampleIg ? `${sampleIg.name} → ${sampleIg.instagram}` : 'NONE — Instagram column empty in sheet');
+  console.log('[Champions AI] Sample gym phone:', sampleGym ? `${sampleGym.name} → ${sampleGym.phone}` : 'NONE — Phone column empty in sheet');
+  console.log('[Champions AI] MMA roster cols check (row 0):', data.mma[0] ? JSON.stringify(data.mma[0]) : 'empty');
 
   showView('dashboard');
 
@@ -1395,7 +1409,7 @@ function renderDashboard(mc) {
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   const isShowtime = diffDays <= 0;
   const countdownVal = isShowtime ? '🔥' : diffDays;
-  const countdownLabel = isShowtime ? 'SHOWTIME' : diffDays === 1 ? 'Day to Show' : 'Days to Show';
+  const countdownLabel = isShowtime ? 'SHOWTIME' : 'Days to Showtime';
   const countdownColor = isShowtime ? 'var(--red)' : diffDays <= 7 ? 'var(--amber)' : 'var(--gold)';
 
   mc.innerHTML = `
@@ -1576,37 +1590,44 @@ function renderGyms(mc) {
 
 // ── COACHES ───────────────────────────────────────────────────────
 function renderCoaches(mc) {
-  // Build coach list from _gymRegistry (populated when Gyms renders)
-  // Also build from gyms data directly in case Gyms hasn't been visited yet
   const coachMap = {};
 
-  data.gyms.forEach(g => {
+  // Build from _gymRegistry (has phone, ig, fighters)
+  Object.entries(_gymRegistry).forEach(([gymName, g]) => {
     if (!g.contact) return;
     const coaches = g.contact.split('/').map(c => c.trim()).filter(Boolean);
     coaches.forEach(coachName => {
       const key = coachName.toLowerCase();
-      if (!coachMap[key]) coachMap[key] = { name: coachName, gym: g.name, phone: g.phone || '', instagram: g.instagram || '', sports: g.sports || '' };
+      if (!coachMap[key]) {
+        coachMap[key] = {
+          name:      coachName,
+          gym:       gymName,
+          gymKey:    gymName,
+          phone:     g.phone || '',
+          instagram: g.instagram || '',
+          sports:    [...g.sports].join(', '),
+          fighters:  g.fighters || []
+        };
+      }
     });
   });
 
-  // Also pull from roster contact fields
+  // Fallback: add coaches from roster contact fields not already found
   [...data.mma, ...data.mt, ...data.grapple].forEach(f => {
     if (!f.contact) return;
     const key = f.contact.toLowerCase();
-    if (!coachMap[key]) coachMap[key] = { name: f.contact, gym: f.gym || '', phone: '', instagram: '', sports: '' };
-    else if (!coachMap[key].gym) coachMap[key].gym = f.gym || '';
-  });
-
-  // Merge phone/ig from _gymRegistry
-  Object.values(_gymRegistry).forEach(g => {
-    if (!g.contact) return;
-    g.contact.split('/').map(c => c.trim()).filter(Boolean).forEach(coachName => {
-      const key = coachName.toLowerCase();
-      if (coachMap[key]) {
-        if (g.phone && !coachMap[key].phone) coachMap[key].phone = g.phone;
-        if (g.instagram && !coachMap[key].instagram) coachMap[key].instagram = g.instagram;
-      }
-    });
+    if (!coachMap[key]) {
+      const gymData = _gymRegistry[f.gym] || {};
+      coachMap[key] = {
+        name:      f.contact,
+        gym:       f.gym || '',
+        gymKey:    f.gym || '',
+        phone:     gymData.phone || '',
+        instagram: gymData.instagram || '',
+        sports:    '',
+        fighters:  gymData.fighters || []
+      };
+    }
   });
 
   const sorted = Object.values(coachMap).sort((a,b) => a.name.localeCompare(b.name));
@@ -1620,17 +1641,19 @@ function renderCoaches(mc) {
       ${sorted.map(c => {
         const phoneClean = c.phone ? c.phone.replace(/\D/g,'') : '';
         const igHandle   = c.instagram ? c.instagram.replace('@','') : '';
-        const safeGym    = c.gym.replace(/'/g,"\\'");
-        return `<div class="bout-card" onclick="openCoachPanel('${safeGym}')" style="padding:14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:15px;font-weight:600;color:var(--white)">${escHtml(c.name)}</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">${escHtml(c.gym)}</div>
-            <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap;">
-              ${c.phone    ? `<a href="tel:${phoneClean}" onclick="event.stopPropagation()" style="font-size:13px;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:4px;min-height:34px;">📞 ${escHtml(c.phone)}</a>` : ''}
-              ${c.instagram? `<a href="https://instagram.com/${igHandle}" target="_blank" onclick="event.stopPropagation()" style="font-size:13px;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:4px;min-height:34px;">📷 ${escHtml(c.instagram)}</a>` : ''}
+        const safeGym    = c.gymKey.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `<div class="bout-card" onclick="openCoachPanel('${safeGym}')" style="padding:14px;cursor:pointer;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:15px;font-weight:600;color:var(--white)">${escHtml(c.name)}</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px">${escHtml(c.gym)}${c.sports ? ' · ' + escHtml(c.sports) : ''}</div>
+              <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
+                ${c.phone    ? `<a href="tel:${phoneClean}" onclick="event.stopPropagation()" style="font-size:13px;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:4px;min-height:36px;">📞 ${escHtml(c.phone)}</a>` : ''}
+                ${c.instagram? `<a href="https://instagram.com/${igHandle}" target="_blank" onclick="event.stopPropagation()" style="font-size:13px;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:4px;min-height:36px;">📷 ${escHtml(c.instagram)}</a>` : ''}
+              </div>
             </div>
+            <div style="color:var(--muted);font-size:20px;padding-top:4px;">›</div>
           </div>
-          <div style="color:var(--muted);font-size:18px;">›</div>
         </div>`;
       }).join('')}
       ${!sorted.length ? '<div class="empty">No coach data — add coach names to your Gyms tab</div>' : ''}
