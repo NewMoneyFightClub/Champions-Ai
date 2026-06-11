@@ -919,7 +919,7 @@ tbody td {
     <button class="tab-btn" onclick="showView('mt')"><span class="tab-icon">🦵</span>MT</button>
     <button class="tab-btn" onclick="showView('grapple')"><span class="tab-icon">🥋</span>Grapple</button>
     <button class="tab-btn" onclick="showView('gyms')"><span class="tab-icon">⚔️</span>Gyms</button>
-    <button class="tab-btn" onclick="showView('coaches')"><span class="tab-icon">🧑‍🏫</span>Coaches</button>
+    <button class="tab-btn" onclick="showView('coaches')"><span class="tab-icon">🥷</span>Coaches</button>
   </div>
 </div>
 
@@ -2173,6 +2173,7 @@ function mtRunSearch() {
 
   const candidates = roster.filter(opp => {
     if (opp.name === f.name) return false;
+    if (opp.gender && f.gender && opp.gender !== f.gender) return false;
     if (opp.gym && f.gym && opp.gym.toLowerCase() === f.gym.toLowerCase()) return false;
     const oppW = parseFloat(String(opp.weight));
     if (!isNaN(oppW) && !isNaN(weight) && Math.abs(oppW - weight) > tol) return false;
@@ -2205,7 +2206,6 @@ function mtRunSearch() {
               <span class="result-sport-badge ${bc}" style="font-size:10px">${sport.toUpperCase()}</span>
               <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--white)">${escHtml(String(opp.weight))}lbs · ${escHtml(opp.record)}</span>
               <span style="font-size:11px;color:${wColor}">Δ${opp._wdiff}lbs</span>
-              ${opp.gender !== f.gender ? `<span style="font-size:11px;color:var(--amber)">⚠ gender diff</span>` : ''}
               ${opp.flag ? `<span style="font-size:11px;color:var(--red)">⚑ flagged</span>` : ''}
             </div>
           </div>
@@ -2351,11 +2351,12 @@ function runMatchupSearch() {
 
   const candidates = roster.filter(opp => {
     if (opp.name === f.name) return false;
+    if (opp.gender && f.gender && opp.gender !== f.gender) return false;
     if (opp.gym && f.gym && opp.gym.toLowerCase() === f.gym.toLowerCase()) return false;
     if (alreadyBooked.has(opp.name.toLowerCase())) return false;
     const oppW = parseFloat(String(opp.weight));
-    if (isNaN(oppW) || isNaN(weight)) return true;
-    return Math.abs(oppW - weight) <= tol;
+    if (!isNaN(oppW) && !isNaN(weight)) return Math.abs(oppW - weight) <= tol;
+    return true;
   });
 
   const scored = candidates.map(opp => {
