@@ -895,11 +895,9 @@ tbody td {
     </div>
     <div class="topbar-nav">
       <button class="nav-btn active" onclick="showView('dashboard')">Dashboard</button>
-      <button class="nav-btn" onclick="showView('matchup')">Matchup</button>
+      <button class="nav-btn" onclick="showView('matchup')">Bout</button>
       <button class="nav-btn" onclick="showView('cards')">Cards</button>
-      <button class="nav-btn" onclick="showView('mma')">MMA</button>
-      <button class="nav-btn" onclick="showView('mt')">Muay Thai</button>
-      <button class="nav-btn" onclick="showView('grapple')">Grappling</button>
+      <button class="nav-btn" onclick="showView('fighters')">Fighters</button>
       <button class="nav-btn" onclick="showView('gyms')">Gyms</button>
       <button class="nav-btn" onclick="showView('coaches')">Coaches</button>
     </div>
@@ -913,11 +911,9 @@ tbody td {
   <!-- MOBILE TAB BAR -->
   <div class="tab-bar">
     <button class="tab-btn active" onclick="showView('dashboard')"><span class="tab-icon">🏠</span>Home</button>
-    <button class="tab-btn" onclick="showView('matchup')" style="color:var(--gold)"><span class="tab-icon">🔍</span>Matchup</button>
+    <button class="tab-btn" onclick="showView('matchup')" style="color:var(--gold)"><span class="tab-icon">🔍</span>Bout</button>
     <button class="tab-btn" onclick="showView('cards')"><span class="tab-icon">📋</span>Cards</button>
-    <button class="tab-btn" onclick="showView('mma')"><span class="tab-icon">🥊</span>MMA</button>
-    <button class="tab-btn" onclick="showView('mt')"><span class="tab-icon">🦵</span>MT</button>
-    <button class="tab-btn" onclick="showView('grapple')"><span class="tab-icon">🥋</span>Grapple</button>
+    <button class="tab-btn" onclick="showView('fighters')"><span class="tab-icon">🥊</span>Fighters</button>
     <button class="tab-btn" onclick="showView('gyms')"><span class="tab-icon">⚔️</span>Gyms</button>
     <button class="tab-btn" onclick="showView('coaches')"><span class="tab-icon">🥷</span>Coaches</button>
   </div>
@@ -1277,20 +1273,21 @@ function showView(view) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 
-  const viewMap = {dashboard:0, matchup:1, cards:2, mma:3, mt:4, grapple:5, gyms:6, coaches:7};
+  const viewMap = {dashboard:0, matchup:1, cards:2, fighters:3, gyms:4, coaches:5};
   const navBtns = document.querySelectorAll('.nav-btn');
   const tabBtns = document.querySelectorAll('.tab-btn');
   if (navBtns[viewMap[view]]) navBtns[viewMap[view]].classList.add('active');
-  const tabMap = {dashboard:0, matchup:1, cards:2, mma:3, mt:4, grapple:5, gyms:6, coaches:7};
+  const tabMap = {dashboard:0, matchup:1, cards:2, fighters:3, gyms:4, coaches:5};
   if (tabBtns[tabMap[view]]) tabBtns[tabMap[view]].classList.add('active');
 
   const mc = document.getElementById('main-content');
 
   if (view === 'dashboard') renderDashboard(mc);
   else if (view === 'matchup') renderMatchupTool(mc);
-  else if (view === 'mma') renderRoster(mc, data.mma, 'MMA', 'mma');
-  else if (view === 'mt') renderRoster(mc, data.mt, 'MUAY THAI', 'mt');
-  else if (view === 'grapple') renderRoster(mc, data.grapple, 'GRAPPLING', 'grapple');
+  else if (view === 'fighters') renderFighters(mc);
+  else if (view === 'mma') renderFighters(mc, 'mma');
+  else if (view === 'mt') renderFighters(mc, 'mt');
+  else if (view === 'grapple') renderFighters(mc, 'grapple');
   else if (view === 'gyms') renderGyms(mc);
   else if (view === 'coaches') renderCoaches(mc);
   else if (view === 'cards') renderCardBuilder(mc);
@@ -1427,7 +1424,7 @@ function renderDashboard(mc) {
     <!-- BOUT CREATOR SHORTCUT -->
     <button onclick="showView('matchup')" style="width:100%;background:linear-gradient(135deg,#2a1f00,#1a1200);border:1px solid var(--gold);border-radius:8px;padding:18px 20px;margin-bottom:16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;text-align:left;">
       <div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--gold)">🔍 BOUT CREATOR</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--gold)">🔍 BOUT</div>
         <div style="font-size:13px;color:#a08030;margin-top:3px">Search database · Find opponents · Build the card</div>
       </div>
       <div style="font-size:28px;color:var(--gold);opacity:0.7">›</div>
@@ -1598,6 +1595,82 @@ function renderGyms(mc) {
         </div>`;
       }).join('')}
     </div>`;
+}
+
+// ── FIGHTERS (unified) ───────────────────────────────────────────
+let _fightersFilter = { sport: 'all', gender: 'all', flag: false };
+
+function renderFighters(mc, forceSport) {
+  if (forceSport) _fightersFilter.sport = forceSport;
+  const sportMap = { MMA:'mma', MT:'mt', GRP:'grapple' };
+  const all = [
+    ...data.mma.map(f=>({...f,_sport:'MMA'})),
+    ...data.mt.map(f=>({...f,_sport:'MT'})),
+    ...data.grapple.map(f=>({...f,_sport:'GRP'}))
+  ];
+
+  const filtered = all.filter(f => {
+    const sel = _fightersFilter.sport;
+    if (sel !== 'all') {
+      if (sel === 'mma'     && f._sport !== 'MMA') return false;
+      if (sel === 'mt'      && f._sport !== 'MT')  return false;
+      if (sel === 'grapple' && f._sport !== 'GRP') return false;
+    }
+    if (_fightersFilter.gender === 'male'   && f.gender !== 'M') return false;
+    if (_fightersFilter.gender === 'female' && f.gender !== 'F') return false;
+    if (_fightersFilter.flag && !f.flag) return false;
+    return true;
+  }).sort((a,b) => a.name.localeCompare(b.name));
+
+  const fb = (id, label, active) =>
+    `<button onclick="setFighterFilter('${id}')" class="filter-btn${active?' active':''}" style="min-height:36px">${label}</button>`;
+
+  mc.innerHTML = `
+    <div style="margin-bottom:12px">
+      <div class="section-title">🥊 FIGHTERS</div>
+      <div style="font-size:12px;color:var(--muted)">${all.length} total · ${filtered.length} shown</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+      ${fb('sport:all',    'ALL',       _fightersFilter.sport==='all')}
+      ${fb('sport:mma',    'MMA',       _fightersFilter.sport==='mma')}
+      ${fb('sport:mt',     'Muay Thai', _fightersFilter.sport==='mt')}
+      ${fb('sport:grapple','Grappling', _fightersFilter.sport==='grapple')}
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+      ${fb('gender:all',   'All',     _fightersFilter.gender==='all')}
+      ${fb('gender:male',  'Male',    _fightersFilter.gender==='male')}
+      ${fb('gender:female','Female',  _fightersFilter.gender==='female')}
+      ${fb('flag:toggle',  '⚑ Flagged', _fightersFilter.flag)}
+    </div>
+    <div class="roster-table">
+      ${filtered.map(f => {
+        const bc = f._sport==='MMA'?'badge-mma':f._sport==='MT'?'badge-mt':'badge-grapple';
+        const sp = sportMap[f._sport] || 'mma';
+        return `<div class="roster-row" onclick="openFighterProfile(${safeJson(f)},'${sp}')">
+          <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+            <span class="result-sport-badge ${bc}" style="font-size:10px;flex-shrink:0">${f._sport}</span>
+            <div style="min-width:0">
+              <div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(f.name)}</div>
+              <div style="font-size:11px;color:var(--muted)">${escHtml(f.gym)}</div>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12px">${escHtml(String(f.weight))}lbs</div>
+            <div style="font-size:11px;color:var(--muted)">${escHtml(f.record)}</div>
+          </div>
+          ${f.flag ? '<span style="color:var(--red);font-size:13px;margin-left:6px;flex-shrink:0">⚑</span>' : ''}
+        </div>`;
+      }).join('')}
+      ${!filtered.length ? '<div class="empty">No fighters match this filter</div>' : ''}
+    </div>`;
+}
+
+function setFighterFilter(id) {
+  const [type, val] = id.split(':');
+  if (type === 'sport')  _fightersFilter.sport  = val;
+  if (type === 'gender') _fightersFilter.gender = val;
+  if (type === 'flag')   _fightersFilter.flag   = !_fightersFilter.flag;
+  renderFighters(document.getElementById('main-content'));
 }
 
 // ── COACHES ───────────────────────────────────────────────────────
@@ -1871,7 +1944,8 @@ function renderCardBuilder(mc) {
                 <div style="font-size:11px;color:var(--muted)">${escHtml(b.gym2)} · ${escHtml(b.record2)}</div>
               </div>
               <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
-                ${hasFlag ? '<span style="font-size:11px;color:var(--red)" title="Same gym conflict">⚑</span>' : '<span style="font-size:11px;color:var(--green)">✓</span>'}
+                ${hasFlag ? '<span style="font-size:10px;color:var(--red);letter-spacing:1px;font-family:\'Bebas Neue\',sans-serif">⚑</span>' : ''}
+                <span style="font-size:10px;letter-spacing:1px;font-family:\'Bebas Neue\',sans-serif;color:${b.status&&b.status.toLowerCase().includes('confirm')?'#66bb77':'var(--amber)'}">${b.status&&b.status.toLowerCase().includes('confirm')?'CONF':'PEND'}</span>
                 <button onclick="openEditBoutModal(${ei},${bi})" style="background:none;border:1px solid var(--border);border-radius:3px;color:var(--muted);cursor:pointer;font-size:11px;padding:3px 7px;min-height:28px;" title="Edit bout">EDIT</button>
               </div>
             </div>`;
@@ -2169,9 +2243,25 @@ function mtRunSearch() {
   const tol    = window._mtTol || 5;
   const weight = parseFloat(String(f.weight));
   const sport  = window._mtSport || 'mma';
-  const roster = sport === 'mma' ? data.mma : sport === 'mt' ? data.mt : data.grapple;
 
-  const candidates = roster.filter(opp => {
+  // Cross-sport: search all rosters
+  const allFighters = [
+    ...data.mma.map(x=>({...x,_sport:'mma'})),
+    ...data.mt.map(x=>({...x,_sport:'mt'})),
+    ...data.grapple.map(x=>({...x,_sport:'grapple'}))
+  ];
+
+  // Check notes for prior conflicts
+  const notesConflictCheck = (opp) => {
+    const names = [opp.name.toLowerCase(), f.name.toLowerCase()];
+    const found = data.notes.find(n =>
+      n.note && n.note.toLowerCase().includes('conflict') &&
+      names.some(nm => (n.fighter||'').toLowerCase().includes(nm) || n.note.toLowerCase().includes(nm))
+    );
+    return found ? found.note : null;
+  };
+
+  const candidates = allFighters.filter(opp => {
     if (opp.name === f.name) return false;
     if (opp.gender && f.gender && opp.gender !== f.gender) return false;
     if (opp.gym && f.gym && opp.gym.toLowerCase() === f.gym.toLowerCase()) return false;
@@ -2183,7 +2273,8 @@ function mtRunSearch() {
   const scored = candidates.map(opp => {
     const oppW = parseFloat(String(opp.weight)) || weight;
     const wDiff = Math.abs(oppW - weight);
-    return { ...opp, _wdiff: wDiff, _score: (opp.gender !== f.gender ? 100 : 0) + wDiff };
+    const sameSportBonus = opp._sport === sport ? 0 : 15;
+    return { ...opp, _wdiff: wDiff, _score: sameSportBonus + wDiff, _noteConflict: notesConflictCheck(opp) };
   }).sort((a,b) => a._score - b._score);
 
   const res = document.getElementById('mt-results');
@@ -2197,21 +2288,28 @@ function mtRunSearch() {
     <div style="display:grid;gap:10px;">
       ${scored.slice(0,20).map(opp => {
         const wColor = opp._wdiff === 0 ? 'var(--green)' : opp._wdiff <= 5 ? 'var(--amber)' : 'var(--muted)';
-        const bc = sport==='mma'?'badge-mma':sport==='mt'?'badge-mt':'badge-grapple';
-        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;align-items:center;gap:12px;">
+        const bc = opp._sport==='mma'?'badge-mma':opp._sport==='mt'?'badge-mt':'badge-grapple';
+        const isCross = opp._sport !== sport;
+        const borderColor = opp._noteConflict ? 'rgba(204,51,51,0.5)' : isCross ? 'rgba(201,168,76,0.2)' : 'var(--border)';
+        const f1safe = opp.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `<div style="background:var(--card);border:1px solid ${borderColor};border-radius:8px;padding:14px;display:flex;align-items:center;gap:12px;">
           <div style="flex:1;min-width:0;">
-            <div style="font-size:15px;font-weight:700;color:var(--white);cursor:pointer" onclick="searchAndOpen('${opp.name.replace(/'/g,"\\'")}')"> ${escHtml(opp.name)}</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:3px">${escHtml(opp.gym)}</div>
-            <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;align-items:center;">
-              <span class="result-sport-badge ${bc}" style="font-size:10px">${sport.toUpperCase()}</span>
-              <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--white)">${escHtml(String(opp.weight))}lbs · ${escHtml(opp.record)}</span>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+              <span class="result-sport-badge ${bc}" style="font-size:10px">${opp._sport.toUpperCase()}</span>
+              ${isCross ? `<span style="font-size:10px;color:var(--gold);background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.2);border-radius:3px;padding:1px 6px">CROSS-SPORT</span>` : ''}
+            </div>
+            <div style="font-size:15px;font-weight:700;color:var(--white);cursor:pointer" onclick="searchAndOpen('${f1safe}')">${escHtml(opp.name)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${escHtml(opp.gym)}</div>
+            <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;">
+              <span style="font-family:monospace;font-size:11px;color:var(--white)">${escHtml(String(opp.weight))}lbs · ${escHtml(opp.record)}</span>
               <span style="font-size:11px;color:${wColor}">Δ${opp._wdiff}lbs</span>
               ${opp.flag ? `<span style="font-size:11px;color:var(--red)">⚑ flagged</span>` : ''}
             </div>
+            ${opp._noteConflict ? `<div style="font-size:11px;color:var(--red);margin-top:6px;background:rgba(204,51,51,0.08);border-radius:4px;padding:4px 8px;">⚑ Note conflict: ${escHtml(opp._noteConflict)}</div>` : ''}
           </div>
           <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
-            <button onclick="mtCreateBout(${safeJson(f)},${safeJson(opp)})" style="background:var(--gold);color:#000;border:none;border-radius:6px;padding:10px 16px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;min-height:44px;white-space:nowrap;">+ CREATE BOUT</button>
-            <button onclick="openFighterProfile(${safeJson(opp)},'${sport}')" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 10px;font-size:11px;cursor:pointer;min-height:32px;">VIEW PROFILE</button>
+            <button onclick="mtCreateBout(${safeJson(f)},${safeJson(opp)})" style="background:var(--gold);color:#000;border:none;border-radius:6px;padding:10px 16px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;min-height:44px;white-space:nowrap;">+ ADD</button>
+            <button onclick="openFighterProfile(${safeJson(opp)},'${opp._sport}')" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 10px;font-size:11px;cursor:pointer;min-height:32px;">PROFILE</button>
           </div>
         </div>`;
       }).join('')}
