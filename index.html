@@ -878,7 +878,7 @@ tbody td {
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">CHAMPIONS AI</div>
-    <div class="login-sub">Combat Matchmaker Tool</div>
+    <div class="login-sub">Bout Creator Tool</div>
     <button class="login-btn" onclick="enterApp()">ENTER</button>
   </div>
 </div>
@@ -895,6 +895,7 @@ tbody td {
     </div>
     <div class="topbar-nav">
       <button class="nav-btn active" onclick="showView('dashboard')">Dashboard</button>
+      <button class="nav-btn" onclick="showView('matchup')">Matchup</button>
       <button class="nav-btn" onclick="showView('cards')">Cards</button>
       <button class="nav-btn" onclick="showView('mma')">MMA</button>
       <button class="nav-btn" onclick="showView('mt')">Muay Thai</button>
@@ -912,6 +913,7 @@ tbody td {
   <!-- MOBILE TAB BAR -->
   <div class="tab-bar">
     <button class="tab-btn active" onclick="showView('dashboard')"><span class="tab-icon">🏠</span>Home</button>
+    <button class="tab-btn" onclick="showView('matchup')" style="color:var(--gold)"><span class="tab-icon">🔍</span>Matchup</button>
     <button class="tab-btn" onclick="showView('cards')"><span class="tab-icon">📋</span>Cards</button>
     <button class="tab-btn" onclick="showView('mma')"><span class="tab-icon">🥊</span>MMA</button>
     <button class="tab-btn" onclick="showView('mt')"><span class="tab-icon">🦵</span>MT</button>
@@ -1275,16 +1277,17 @@ function showView(view) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 
-  const viewMap = {dashboard:0, cards:1, mma:2, mt:3, grapple:4, gyms:5, coaches:6};
+  const viewMap = {dashboard:0, matchup:1, cards:2, mma:3, mt:4, grapple:5, gyms:6, coaches:7};
   const navBtns = document.querySelectorAll('.nav-btn');
   const tabBtns = document.querySelectorAll('.tab-btn');
   if (navBtns[viewMap[view]]) navBtns[viewMap[view]].classList.add('active');
-  const tabMap = {dashboard:0, cards:1, mma:2, mt:3, grapple:4, gyms:5, coaches:6};
+  const tabMap = {dashboard:0, matchup:1, cards:2, mma:3, mt:4, grapple:5, gyms:6, coaches:7};
   if (tabBtns[tabMap[view]]) tabBtns[tabMap[view]].classList.add('active');
 
   const mc = document.getElementById('main-content');
 
   if (view === 'dashboard') renderDashboard(mc);
+  else if (view === 'matchup') renderMatchupTool(mc);
   else if (view === 'mma') renderRoster(mc, data.mma, 'MMA', 'mma');
   else if (view === 'mt') renderRoster(mc, data.mt, 'MUAY THAI', 'mt');
   else if (view === 'grapple') renderRoster(mc, data.grapple, 'GRAPPLING', 'grapple');
@@ -1420,6 +1423,15 @@ function renderDashboard(mc) {
       <div class="stat-card"><div class="stat-num" style="color:var(--red)">${eventCamoFlags.length}</div><div class="stat-label">Card Flags</div></div>
       <div class="stat-card"><div class="stat-num" style="color:${countdownColor}">${countdownVal}</div><div class="stat-label">${countdownLabel}</div></div>
     </div>
+
+    <!-- BOUT CREATOR SHORTCUT -->
+    <button onclick="showView('matchup')" style="width:100%;background:linear-gradient(135deg,#2a1f00,#1a1200);border:1px solid var(--gold);border-radius:8px;padding:18px 20px;margin-bottom:16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;text-align:left;">
+      <div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--gold)">🔍 BOUT CREATOR</div>
+        <div style="font-size:13px;color:#a08030;margin-top:3px">Search database · Find opponents · Build the card</div>
+      </div>
+      <div style="font-size:28px;color:var(--gold);opacity:0.7">›</div>
+    </button>
 
     <!-- STICKY NOTES -->
     <div class="sticky-notes-area">
@@ -1837,6 +1849,7 @@ function renderCardBuilder(mc) {
             <div style="font-size:12px;color:var(--muted);margin-top:2px">${escHtml(ev.date||'Date TBD')} · ${escHtml(ev.venue||'Venue TBD')} · ${escHtml(ev.type||'')}</div>
           </div>
           <div style="display:flex;gap:8px;">
+            <button class="filter-btn" style="color:var(--gold);border-color:rgba(201,168,76,0.4)" onclick="openMatchupFinder(${ei})">🔍 Find Matchup</button>
             <button class="filter-btn" onclick="openAddBoutModal(${ei})">+ Bout</button>
             ${!ev.seed ? `<button class="filter-btn" style="color:var(--red);border-color:rgba(204,51,51,0.3)" onclick="confirmDeleteEvent(${ei})">Delete</button>` : ''}
           </div>
@@ -2044,6 +2057,361 @@ function confirmDeleteBout() {
   toast.innerHTML = `Remove <strong>${escHtml(b.fighter1||'TBD')} vs ${escHtml(b.fighter2||'TBD')}</strong>? <button onclick="removeBout(${editBoutEventIdx},${editBoutIdx})" style="margin-left:10px;background:var(--red);color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px;">Yes, remove</button>`;
   toast.className = 'toast error show';
   setTimeout(() => { toast.className = 'toast'; toast.innerHTML = ''; }, 5000);
+}
+
+// ── MATCHUP TOOL (full page) ──────────────────────────────────────
+function renderMatchupTool(mc) {
+  mc.innerHTML = `
+    <div style="margin-bottom:20px;">
+      <div class="section-title" style="font-size:22px;">🔍 BOUT CREATOR</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px">Search the database to find compatible opponents and create bouts</div>
+    </div>
+
+    <!-- SPORT SELECT -->
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+      <button id="mt-sport-mma" class="filter-btn active" onclick="mtSetSport('mma')" style="font-size:14px;padding:10px 20px;min-height:44px;">MMA</button>
+      <button id="mt-sport-mt"  class="filter-btn"        onclick="mtSetSport('mt')"  style="font-size:14px;padding:10px 20px;min-height:44px;">Muay Thai</button>
+      <button id="mt-sport-grapple" class="filter-btn"    onclick="mtSetSport('grapple')" style="font-size:14px;padding:10px 20px;min-height:44px;">Grappling</button>
+    </div>
+
+    <!-- FIGHTER SEARCH -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:11px;letter-spacing:2px;color:var(--gold);margin-bottom:10px;">STEP 1 — PICK A FIGHTER</div>
+      <input class="form-input" id="mt-fighter-input" placeholder="Type fighter name..." oninput="mtSearchFighter(this.value)" autocomplete="off" style="font-size:16px;padding:12px;">
+      <div id="mt-fighter-dd" style="background:var(--dark);border:1px solid var(--border);border-radius:4px;margin-top:4px;display:none;max-height:220px;overflow-y:auto;"></div>
+      <div id="mt-selected-card" style="display:none;margin-top:12px;background:var(--border);border-radius:6px;padding:12px;">
+        <div style="font-size:11px;color:var(--gold);letter-spacing:2px;margin-bottom:6px;">SELECTED</div>
+        <div id="mt-sel-name" style="font-size:17px;font-weight:700;color:var(--white)"></div>
+        <div id="mt-sel-detail" style="font-size:12px;color:var(--muted);margin-top:3px;"></div>
+      </div>
+    </div>
+
+    <!-- WEIGHT TOLERANCE -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:11px;letter-spacing:2px;color:var(--gold);margin-bottom:10px;">STEP 2 — WEIGHT TOLERANCE</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${[3,5,10,15].map(t => `<button id="mt-tol-${t}" class="filter-btn${t===5?' active':''}" onclick="mtSetTol(${t})" style="min-height:40px;padding:8px 16px;">±${t} lbs</button>`).join('')}
+      </div>
+    </div>
+
+    <!-- FIND BUTTON -->
+    <button onclick="mtRunSearch()" style="width:100%;background:var(--gold);color:#000;border:none;border-radius:6px;padding:16px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;margin-bottom:20px;min-height:54px;">FIND MATCHUPS</button>
+
+    <!-- RESULTS -->
+    <div id="mt-results"></div>`;
+
+  window._mtSport = 'mma';
+  window._mtTol   = 5;
+  window._mtFighter = null;
+}
+
+function mtSetSport(sport) {
+  window._mtSport = sport;
+  window._mtFighter = null;
+  ['mma','mt','grapple'].forEach(s => {
+    const b = document.getElementById(`mt-sport-${s}`);
+    if (b) b.classList.toggle('active', s === sport);
+  });
+  const inp = document.getElementById('mt-fighter-input');
+  if (inp) inp.value = '';
+  const dd = document.getElementById('mt-fighter-dd');
+  if (dd) dd.style.display = 'none';
+  const sel = document.getElementById('mt-selected-card');
+  if (sel) sel.style.display = 'none';
+  const res = document.getElementById('mt-results');
+  if (res) res.innerHTML = '';
+}
+
+function mtSetTol(t) {
+  window._mtTol = t;
+  [3,5,10,15].forEach(v => {
+    const b = document.getElementById(`mt-tol-${v}`);
+    if (b) b.classList.toggle('active', v === t);
+  });
+}
+
+function mtSearchFighter(q) {
+  const dd = document.getElementById('mt-fighter-dd');
+  if (!q || q.length < 2) { dd.style.display = 'none'; return; }
+  const sport = window._mtSport || 'mma';
+  const roster = sport === 'mma' ? data.mma : sport === 'mt' ? data.mt : data.grapple;
+  const matches = roster.filter(f => f.name.toLowerCase().includes(q.toLowerCase())).slice(0, 10);
+  if (!matches.length) { dd.style.display = 'none'; return; }
+  dd.style.display = 'block';
+  dd.innerHTML = matches.map(f => `
+    <div onclick="mtSelectFighter(${safeJson(f)})" style="padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;min-height:48px;" onmouseover="this.style.background='#1a1a1a'" onmouseout="this.style.background='transparent'">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:600;color:var(--white)">${escHtml(f.name)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${escHtml(f.gym)} · <span style="font-family:'JetBrains Mono',monospace">${escHtml(String(f.weight))}lbs · ${escHtml(f.record)}</span></div>
+      </div>
+      ${f.flag ? '<span style="color:var(--red)">⚑</span>' : ''}
+    </div>`).join('');
+}
+
+function mtSelectFighter(f) {
+  window._mtFighter = f;
+  const inp = document.getElementById('mt-fighter-input');
+  if (inp) inp.value = f.name;
+  const dd = document.getElementById('mt-fighter-dd');
+  if (dd) dd.style.display = 'none';
+  const sel = document.getElementById('mt-selected-card');
+  if (sel) sel.style.display = 'block';
+  const nm = document.getElementById('mt-sel-name');
+  if (nm) nm.textContent = f.name;
+  const dt = document.getElementById('mt-sel-detail');
+  if (dt) dt.textContent = `${f.weight}lbs · ${f.record} · ${f.gym}${f.gender ? ' · ' + (f.gender==='M'?'Male':'Female') : ''}`;
+  document.getElementById('mt-results').innerHTML = '';
+}
+
+function mtRunSearch() {
+  const f = window._mtFighter;
+  if (!f) { showToast('Pick a fighter first'); return; }
+  const tol    = window._mtTol || 5;
+  const weight = parseFloat(String(f.weight));
+  const sport  = window._mtSport || 'mma';
+  const roster = sport === 'mma' ? data.mma : sport === 'mt' ? data.mt : data.grapple;
+
+  const candidates = roster.filter(opp => {
+    if (opp.name === f.name) return false;
+    if (opp.gym && f.gym && opp.gym.toLowerCase() === f.gym.toLowerCase()) return false;
+    const oppW = parseFloat(String(opp.weight));
+    if (!isNaN(oppW) && !isNaN(weight) && Math.abs(oppW - weight) > tol) return false;
+    return true;
+  });
+
+  const scored = candidates.map(opp => {
+    const oppW = parseFloat(String(opp.weight)) || weight;
+    const wDiff = Math.abs(oppW - weight);
+    return { ...opp, _wdiff: wDiff, _score: (opp.gender !== f.gender ? 100 : 0) + wDiff };
+  }).sort((a,b) => a._score - b._score);
+
+  const res = document.getElementById('mt-results');
+  if (!scored.length) {
+    res.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:24px;text-align:center;color:var(--muted);">No compatible opponents found within ±${tol}lbs from a different gym.<br><br>Try increasing the weight tolerance.</div>`;
+    return;
+  }
+
+  res.innerHTML = `
+    <div style="font-size:11px;letter-spacing:2px;color:var(--gold);margin-bottom:12px;">${scored.length} POSSIBLE OPPONENTS FOR ${escHtml(f.name.toUpperCase())}</div>
+    <div style="display:grid;gap:10px;">
+      ${scored.slice(0,20).map(opp => {
+        const wColor = opp._wdiff === 0 ? 'var(--green)' : opp._wdiff <= 5 ? 'var(--amber)' : 'var(--muted)';
+        const bc = sport==='mma'?'badge-mma':sport==='mt'?'badge-mt':'badge-grapple';
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;align-items:center;gap:12px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:15px;font-weight:700;color:var(--white);cursor:pointer" onclick="searchAndOpen('${opp.name.replace(/'/g,"\\'")}')"> ${escHtml(opp.name)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:3px">${escHtml(opp.gym)}</div>
+            <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;align-items:center;">
+              <span class="result-sport-badge ${bc}" style="font-size:10px">${sport.toUpperCase()}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--white)">${escHtml(String(opp.weight))}lbs · ${escHtml(opp.record)}</span>
+              <span style="font-size:11px;color:${wColor}">Δ${opp._wdiff}lbs</span>
+              ${opp.gender !== f.gender ? `<span style="font-size:11px;color:var(--amber)">⚠ gender diff</span>` : ''}
+              ${opp.flag ? `<span style="font-size:11px;color:var(--red)">⚑ flagged</span>` : ''}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+            <button onclick="mtCreateBout(${safeJson(f)},${safeJson(opp)})" style="background:var(--gold);color:#000;border:none;border-radius:6px;padding:10px 16px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;min-height:44px;white-space:nowrap;">+ CREATE BOUT</button>
+            <button onclick="openFighterProfile(${safeJson(opp)},'${sport}')" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 10px;font-size:11px;cursor:pointer;min-height:32px;">VIEW PROFILE</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function mtCreateBout(f1, f2) {
+  // Go to cards tab and add bout to NMFC6 (first event)
+  const ei = 0;
+  const bout = {
+    match:    `Match ${cardEvents[ei].bouts.length + 1}`,
+    weight:   f1.weight || '',
+    rounds:   '',
+    fighter1: f1.name, gym1: f1.gym, record1: f1.record,
+    fighter2: f2.name, gym2: f2.gym, record2: f2.record,
+    status:   'Pending', boutNotes: ''
+  };
+  cardEvents[ei].bouts.push(bout);
+  localStorage.setItem('nmfc_events', JSON.stringify(cardEvents.filter(e=>!e.seed)));
+  showToast(`${f1.name} vs ${f2.name} added to ${cardEvents[ei].name} ✓`);
+  // Navigate to cards to confirm
+  showView('cards');
+}
+let matchupEventIdx = null;
+
+function openMatchupFinder(ei) {
+  matchupEventIdx = ei;
+  let modal = document.getElementById('matchup-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'matchup-modal';
+    modal.className = 'modal-overlay';
+    modal.style.display = 'none';
+    modal.innerHTML = `
+      <div class="modal" style="max-height:85vh;overflow-y:auto;width:min(94vw,520px)">
+        <div class="modal-title">🔍 FIND A MATCHUP</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Pick a fighter — the app suggests compatible opponents from the full database</div>
+        <div class="form-row">
+          <label class="form-label">Sport</label>
+          <select class="form-select" id="mf-sport" onchange="mfUpdateSport()">
+            <option value="mma">MMA</option>
+            <option value="mt">Muay Thai</option>
+            <option value="grapple">Grappling</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Fighter</label>
+          <input class="form-input" id="mf-search" placeholder="Type fighter name..." oninput="mfSearchFighter(this.value)" autocomplete="off">
+          <div id="mf-suggestions" style="background:var(--card);border:1px solid var(--border);border-radius:4px;margin-top:4px;display:none;max-height:180px;overflow-y:auto;"></div>
+        </div>
+        <div id="mf-selected" style="display:none;background:var(--border);border-radius:6px;padding:12px;margin-bottom:14px;">
+          <div style="font-size:11px;color:var(--gold);letter-spacing:2px;margin-bottom:6px">SELECTED FIGHTER</div>
+          <div id="mf-selected-name" style="font-size:15px;font-weight:600"></div>
+          <div id="mf-selected-detail" style="font-size:12px;color:var(--muted);margin-top:2px"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-end;">
+          <div style="flex:1;min-width:120px;">
+            <label class="form-label">Weight tolerance</label>
+            <select class="form-select" id="mf-tolerance">
+              <option value="3">±3 lbs</option>
+              <option value="5" selected>±5 lbs</option>
+              <option value="10">±10 lbs</option>
+              <option value="15">±15 lbs</option>
+            </select>
+          </div>
+          <button class="modal-save" onclick="runMatchupSearch()" style="white-space:nowrap;height:40px;">FIND MATCHUPS</button>
+        </div>
+        <div id="mf-results"></div>
+        <div class="modal-actions">
+          <button class="modal-cancel" onclick="closeMatchupFinder()">Close</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  document.getElementById('mf-search').value = '';
+  document.getElementById('mf-suggestions').style.display = 'none';
+  document.getElementById('mf-selected').style.display = 'none';
+  document.getElementById('mf-results').innerHTML = '';
+  modal.style.display = 'flex';
+  window._mfFighter = null;
+}
+
+function closeMatchupFinder() {
+  const m = document.getElementById('matchup-modal');
+  if (m) m.style.display = 'none';
+}
+
+function mfUpdateSport() {
+  document.getElementById('mf-search').value = '';
+  document.getElementById('mf-suggestions').style.display = 'none';
+  document.getElementById('mf-selected').style.display = 'none';
+  document.getElementById('mf-results').innerHTML = '';
+  window._mfFighter = null;
+}
+
+function mfGetRoster() {
+  const sport = document.getElementById('mf-sport')?.value || 'mma';
+  return sport === 'mma' ? data.mma : sport === 'mt' ? data.mt : data.grapple;
+}
+
+function mfSearchFighter(q) {
+  const dd = document.getElementById('mf-suggestions');
+  if (!q || q.length < 2) { dd.style.display = 'none'; return; }
+  const roster = mfGetRoster();
+  const matches = roster.filter(f => f.name.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
+  if (!matches.length) { dd.style.display = 'none'; return; }
+  dd.style.display = 'block';
+  dd.innerHTML = matches.map(f => `
+    <div onclick="mfSelectFighter(${safeJson(f)})" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='#222'" onmouseout="this.style.background='transparent'">
+      <span style="font-weight:600">${escHtml(f.name)}</span>
+      <span style="color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace">${escHtml(String(f.weight))}lbs · ${escHtml(f.record)}</span>
+      <span style="color:var(--muted);font-size:11px">${escHtml(f.gym)}</span>
+    </div>`).join('');
+}
+
+function mfSelectFighter(f) {
+  window._mfFighter = f;
+  document.getElementById('mf-search').value = f.name;
+  document.getElementById('mf-suggestions').style.display = 'none';
+  document.getElementById('mf-selected').style.display = 'block';
+  document.getElementById('mf-selected-name').textContent = f.name;
+  document.getElementById('mf-selected-detail').textContent = `${f.weight}lbs · ${f.record} · ${f.gym}`;
+  document.getElementById('mf-results').innerHTML = '';
+}
+
+function runMatchupSearch() {
+  const f = window._mfFighter;
+  if (!f) { showToast('Select a fighter first'); return; }
+  const tol    = parseInt(document.getElementById('mf-tolerance').value);
+  const weight = parseFloat(String(f.weight));
+  const roster = mfGetRoster();
+  const alreadyBooked = new Set();
+  cardEvents[matchupEventIdx]?.bouts?.forEach(b => {
+    if (b.fighter1) alreadyBooked.add(b.fighter1.toLowerCase());
+    if (b.fighter2) alreadyBooked.add(b.fighter2.toLowerCase());
+  });
+
+  const candidates = roster.filter(opp => {
+    if (opp.name === f.name) return false;
+    if (opp.gym && f.gym && opp.gym.toLowerCase() === f.gym.toLowerCase()) return false;
+    if (alreadyBooked.has(opp.name.toLowerCase())) return false;
+    const oppW = parseFloat(String(opp.weight));
+    if (isNaN(oppW) || isNaN(weight)) return true;
+    return Math.abs(oppW - weight) <= tol;
+  });
+
+  const scored = candidates.map(opp => {
+    const oppW = parseFloat(String(opp.weight)) || weight;
+    const wDiff = Math.abs(oppW - weight);
+    const genderPenalty = opp.gender !== f.gender ? 100 : 0;
+    return { ...opp, _wdiff: wDiff, _score: genderPenalty + wDiff };
+  }).sort((a,b) => a._score - b._score);
+
+  const res = document.getElementById('mf-results');
+  if (!scored.length) {
+    res.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:16px 0;text-align:center">No compatible opponents found within ±${tol}lbs from a different gym.<br><br>Try increasing the weight tolerance.</div>`;
+    return;
+  }
+
+  res.innerHTML = `
+    <div style="font-size:11px;letter-spacing:2px;color:var(--gold);margin-bottom:10px">${scored.length} POSSIBLE MATCHUPS FOR ${escHtml(f.name.toUpperCase())}</div>
+    <div style="display:grid;gap:8px;">
+      ${scored.slice(0,15).map(opp => {
+        const wColor = opp._wdiff === 0 ? 'var(--green)' : opp._wdiff <= 5 ? 'var(--amber)' : 'var(--muted)';
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:600;color:var(--white)">${escHtml(opp.name)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${escHtml(opp.gym)}</div>
+            <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;">
+              <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--white)">${escHtml(String(opp.weight))}lbs · ${escHtml(opp.record)}</span>
+              <span style="font-size:11px;color:${wColor}">Δ${opp._wdiff}lbs</span>
+              ${opp.gender !== f.gender ? `<span style="font-size:11px;color:var(--amber)">⚠ gender diff</span>` : ''}
+            </div>
+          </div>
+          <button onclick="mfAddBout(${safeJson(f)},${safeJson(opp)})" style="background:var(--gold);color:#000;border:none;border-radius:4px;padding:8px 14px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;white-space:nowrap;min-height:40px;flex-shrink:0;">+ ADD</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function mfAddBout(f1, f2) {
+  const ei = matchupEventIdx;
+  const bout = {
+    match:    `Match ${cardEvents[ei].bouts.length + 1}`,
+    weight:   f1.weight || '',
+    rounds:   '',
+    fighter1: f1.name,
+    gym1:     f1.gym,
+    record1:  f1.record,
+    fighter2: f2.name,
+    gym2:     f2.gym,
+    record2:  f2.record,
+    status:   'Pending',
+    boutNotes:''
+  };
+  cardEvents[ei].bouts.push(bout);
+  localStorage.setItem('nmfc_events', JSON.stringify(cardEvents.filter(e=>!e.seed)));
+  closeMatchupFinder();
+  showToast(`${f1.name} vs ${f2.name} added ✓`);
+  renderCardBuilder(document.getElementById('main-content'));
 }
 
 function autocompleteF(val, inputId, acId, gymId, recId) {
